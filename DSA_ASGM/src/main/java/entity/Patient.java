@@ -97,7 +97,7 @@ public class Patient {
     public void setMedicalHistory(String medicalHistory) {
         this.medicalHistory = medicalHistory;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -107,7 +107,7 @@ public class Patient {
             return false;
         }
         final Patient other = (Patient) obj;
-        
+
         return Objects.equals(this.patientID, other.patientID);
     }
 

@@ -13,14 +13,15 @@ import javax.swing.JOptionPane;
  * @author hangg
  */
 public class AddPatientUI extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(AddPatientUI.class.getName());
-    
+
     private PatientControl patientControl;
     private Patient patientToEdit;
-    
+
     /**
      * Creates new form Patient
+     *
      * @param patientControl
      */
     public AddPatientUI(PatientControl patientControl) {
@@ -29,9 +30,10 @@ public class AddPatientUI extends javax.swing.JFrame {
         lblAddPatient.setText("Add New Patient");
         txtID.setEditable(true);
     }
-    
+
     /**
      * NEW Constructor for "Edit Mode".
+     *
      * @param patientToEdit The patient whose details will be edited.
      * @param patientControl The controller to handle the update logic.
      */
@@ -39,12 +41,12 @@ public class AddPatientUI extends javax.swing.JFrame {
         this.patientControl = patientControl;
         this.patientToEdit = patientToEdit;
         initComponents();
-        
+
         // Configure the form for editing
         lblAddPatient.setText("Edit Patient Details");
         btnSave.setText("Update");
         txtID.setEditable(false); // The ID cannot be changed
-        
+
         // Pre-fill the form with the patient's existing data
         populateForm(patientToEdit);
     }
@@ -257,7 +259,7 @@ public class AddPatientUI extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-    
+
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         String id = txtID.getText();
         String name = txtName.getText();
@@ -265,7 +267,7 @@ public class AddPatientUI extends javax.swing.JFrame {
         String contact = ftfContactNumber.getText();
         String email = txtEmail.getText();
         String medicalHistory = txaMedicalHistory.getText();
-        
+
         String gender = "";
         if (radMale.isSelected()) {
             gender = "Male";
@@ -277,39 +279,39 @@ public class AddPatientUI extends javax.swing.JFrame {
         String ageText = ftfAge.getText().trim();
         try {
             if (ageText.isEmpty()) {
-                 JOptionPane.showMessageDialog(this, "Age cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                 return;
+                JOptionPane.showMessageDialog(this, "Age cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
             age = Integer.parseInt(ageText);
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Please enter a valid number for age.", "Input Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         if (id.isEmpty() || name.isEmpty() || gender.isEmpty() || ic.contains(" ") || contact.contains(" ")) {
             JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Input Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         Patient patient = new Patient(id, name, gender, age, ic, contact, email, medicalHistory);
 
         if (patientToEdit == null) {
             // "Add Mode": Call the addPatient method
             patientControl.addPatient(patient);
-            clearForm();
+            this.dispose();
         } else {
             // "Edit Mode": Call the updatePatient method
             patientControl.updatePatient(patient);
             this.dispose(); // Close the edit window after updating
         }
-        
+
         clearForm();
     }//GEN-LAST:event_btnSaveActionPerformed
 
     private void btnCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelActionPerformed
         this.dispose();
     }//GEN-LAST:event_btnCancelActionPerformed
-    
+
     private void populateForm(Patient p) {
         txtID.setText(p.getPatientID());
         txtName.setText(p.getName());
@@ -324,7 +326,7 @@ public class AddPatientUI extends javax.swing.JFrame {
         txtEmail.setText(p.getEmail());
         txaMedicalHistory.setText(p.getMedicalHistory());
     }
-    
+
     private void clearForm() {
         txtID.setText("");
         txtName.setText("");
@@ -336,7 +338,7 @@ public class AddPatientUI extends javax.swing.JFrame {
         txaMedicalHistory.setText("");
         txtID.requestFocus();
     }
-    
+
     /**
      * @param args the command line arguments
      */

@@ -20,7 +20,7 @@ import javax.swing.table.DefaultTableModel;
  * @author hangg
  */
 public class PatientListUI extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(PatientListUI.class.getName());
 
     private PatientControl patientControl = new PatientControl();
@@ -31,11 +31,10 @@ public class PatientListUI extends javax.swing.JFrame {
     public PatientListUI() {
         initComponents();
         populateTable();
-        
+
         tblPatient.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // Check for a double-click
                 if (e.getClickCount() == 2) {
                     tblPatientMouseClicked(e);
                 }
@@ -52,7 +51,7 @@ public class PatientListUI extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
+        scrTblPatient = new javax.swing.JScrollPane();
         tblPatient = new javax.swing.JTable();
         btnAdd = new javax.swing.JButton();
 
@@ -82,7 +81,7 @@ public class PatientListUI extends javax.swing.JFrame {
                 tblPatientMouseClicked(evt);
             }
         });
-        jScrollPane1.setViewportView(tblPatient);
+        scrTblPatient.setViewportView(tblPatient);
 
         btnAdd.setText("Add");
         btnAdd.addActionListener(new java.awt.event.ActionListener() {
@@ -97,7 +96,7 @@ public class PatientListUI extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 800, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(scrTblPatient, javax.swing.GroupLayout.PREFERRED_SIZE, 800, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -108,7 +107,7 @@ public class PatientListUI extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(scrTblPatient, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnAdd)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -119,7 +118,9 @@ public class PatientListUI extends javax.swing.JFrame {
 
     private void tblPatientMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblPatientMouseClicked
         int selectedRow = tblPatient.getSelectedRow();
-        if (selectedRow == -1) return;
+        if (selectedRow == -1) {
+            return;
+        }
 
         String patientId = (String) tblPatient.getValueAt(selectedRow, 0);
         Patient patientToEdit = patientControl.findPatientById(patientId);
@@ -127,28 +128,29 @@ public class PatientListUI extends javax.swing.JFrame {
         if (patientToEdit != null) {
             AddPatientUI editUI = new AddPatientUI(patientToEdit, patientControl);
             editUI.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            
-            // --- THIS IS THE FIX ---
-            // Add a listener that waits for the edit window to close.
+
             editUI.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosed(WindowEvent e) {
-                    // When the window is closed, refresh the table data.
                     populateTable();
                 }
             });
-            
+
             editUI.setVisible(true);
         }
     }//GEN-LAST:event_tblPatientMouseClicked
 
     private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
         AddPatientUI addUI = new AddPatientUI(patientControl);
-    
-        // Set the close operation so it only closes this new window, not the whole app
         addUI.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-    
-        // Make the "Add Patient" window visible
+        
+        addUI.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                populateTable();
+            }
+        });
+        
         addUI.setVisible(true);
     }//GEN-LAST:event_btnAddActionPerformed
 
@@ -165,7 +167,7 @@ public class PatientListUI extends javax.swing.JFrame {
         Iterator<Patient> iterator = patientList.getIterator();
         while (iterator.hasNext()) {
             Patient patient = iterator.next();
-            
+
             // Create an array of objects for the row data
             Object[] rowData = {
                 patient.getPatientID(),
@@ -177,12 +179,12 @@ public class PatientListUI extends javax.swing.JFrame {
                 patient.getEmail(),
                 patient.getMedicalHistory()
             };
-            
+
             // Add the new row to the table model
             model.addRow(rowData);
         }
     }
-    
+
     /**
      * @param args the command line arguments
      */
@@ -210,7 +212,7 @@ public class PatientListUI extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAdd;
-    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane scrTblPatient;
     private javax.swing.JTable tblPatient;
     // End of variables declaration//GEN-END:variables
 }

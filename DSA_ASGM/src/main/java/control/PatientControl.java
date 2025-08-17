@@ -16,6 +16,7 @@ import utility.ReadWriteFile;
  * @author hangg
  */
 public class PatientControl {
+
     private ListInterface<Patient> patientList;
     private static final String PATIENT_FILE = "src/main/java/Data File/patients";
 
@@ -23,11 +24,11 @@ public class PatientControl {
         this.patientList = new DoublyLinkedList<>();
         ReadWriteFile.readPatientsFromFile(PATIENT_FILE, this.patientList);
     }
-    
+
     public ListInterface<Patient> getPatientList() {
         return patientList;
     }
-    
+
     public Patient findPatientById(String id) {
         Iterator<Patient> it = patientList.getIterator();
         while (it.hasNext()) {
@@ -36,7 +37,7 @@ public class PatientControl {
                 return p;
             }
         }
-        return null; // Return null if no patient with that ID is found
+        return null;
     }
 
     public void addPatient(Patient newPatient) {
@@ -48,7 +49,7 @@ public class PatientControl {
             JOptionPane.showMessageDialog(null, "Patient added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
         }
     }
-    
+
     public void updatePatient(Patient updatedPatient) {
         for (int i = 1; i <= patientList.getLength(); i++) {
             if (patientList.getEntry(i).getPatientID().equals(updatedPatient.getPatientID())) {
