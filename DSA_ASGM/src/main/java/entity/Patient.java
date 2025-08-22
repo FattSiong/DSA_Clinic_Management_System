@@ -4,6 +4,8 @@
  */
 package entity;
 
+import java.util.Objects;
+
 /**
  *
  * @author tiong
@@ -12,14 +14,18 @@ public class Patient {
 
     private String patientID;
     private String name;
+    private String gender;
+    private int age;
     private String icNumber;
     private String contactNumber;
     private String email;
     private String medicalHistory;
 
-    public Patient(String patientID, String name, String icNumber, String contactNumber, String email, String medicalHistory) {
+    public Patient(String patientID, String name, String gender, int age, String icNumber, String contactNumber, String email, String medicalHistory) {
         this.patientID = patientID;
         this.name = name;
+        this.gender = gender;
+        this.age = age;
         this.icNumber = icNumber;
         this.contactNumber = contactNumber;
         this.email = email;
@@ -33,6 +39,14 @@ public class Patient {
 
     public String getName() {
         return name;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public int getAge() {
+        return age;
     }
 
     public String getIcNumber() {
@@ -60,6 +74,14 @@ public class Patient {
         this.name = name;
     }
 
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
     public void setIcNumber(String icNumber) {
         this.icNumber = icNumber;
     }
@@ -77,10 +99,25 @@ public class Patient {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final Patient other = (Patient) obj;
+
+        return Objects.equals(this.patientID, other.patientID);
+    }
+
+    @Override
     public String toString() {
         return "Patient{"
                 + "patientID='" + patientID + '\''
                 + ", name='" + name + '\''
+                + ", gender='" + gender + '\''
+                + ", age='" + age + '\''
                 + ", icNumber='" + icNumber + '\''
                 + ", contactNumber='" + contactNumber + '\''
                 + ", email='" + email + '\''
