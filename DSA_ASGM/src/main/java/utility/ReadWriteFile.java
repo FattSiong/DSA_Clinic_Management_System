@@ -68,7 +68,7 @@ public class ReadWriteFile {
         // Load dependent entities
         readSchedulesFromFile(SCHEDULES_FILE, scheduleList, doctorList);
         readAppointmentsFromFile(APPOINTMENTS_FILE, appointmentList, patientList, doctorList);
-        readConsultationsFromFile(CONSULTATIONS_FILE, consultationList, appointmentList);
+        readConsultationsFromFile(CONSULTATIONS_FILE, consultationList, appointmentList, patientList, doctorList);
         readTreatmentsFromFile(TREATMENTS_FILE, treatmentList, consultationList, medicineList);
     }
 
@@ -170,15 +170,33 @@ public class ReadWriteFile {
             System.err.println("Error reading appointments file: " + e.getMessage());
         }
     }
-
-    public void readConsultationsFromFile(String filename, ListInterface<Consultation> consultationList, ListInterface<Appointment> appointmentList) {
+    
+    public void readConsultationsFromFile(String filename, ListInterface<Consultation> consultationList, ListInterface<Appointment> appointmentList, ListInterface<Patient> patientList, ListInterface<Doctor> doctorList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
-                Appointment appointment = findAppointmentById(appointmentList, data[1]);
-                if (appointment != null) {
-                    consultationList.add(new Consultation(data[0], appointment, data[2], data[3], LocalDate.parse(data[4])));
+                String consultationID = data[0];
+                String patientID = data[1];
+                String doctorID = data[2];
+                String appointmentID = data[3];
+                String diagnosis = data[4];
+                String notes = data[5];
+                LocalDate consultationDate = LocalDate.parse(data[6]);
+
+                if (appointmentID.equals("N/A")) {
+                    // This is a walk-in consultation
+                    Patient patient = findPatientById(patientList, patientID);
+                    Doctor doctor = findDoctorById(doctorList, doctorID);
+                    if (patient != null && doctor != null) {
+                        consultationList.add(new Consultation(consultationID, patient, doctor, diagnosis, notes, consultationDate));
+                    }
+                } else {
+                    // This is a scheduled consultation
+                    Appointment appointment = findAppointmentById(appointmentList, appointmentID);
+                    if (appointment != null) {
+                        consultationList.add(new Consultation(consultationID, appointment, diagnosis, notes, consultationDate));
+                    }
                 }
             }
         } catch (IOException e) {
@@ -280,13 +298,23 @@ public class ReadWriteFile {
             System.err.println("Error writing appointments file: " + e.getMessage());
         }
     }
-
+    
     public void writeConsultationsToFile(String filename, ListInterface<Consultation> consultationList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             Iterator<Consultation> it = consultationList.getIterator();
-            while (it.hasNext()) {
+            while(it.hasNext()){
                 Consultation c = it.next();
-                String line = String.join("|", c.getConsultationID(), c.getAppointment().getAppointmentID(), c.getDiagnosis(), c.getNotes(), c.getConsultationDate().toString());
+                String appointmentIdStr = (c.getAppointment() != null) ? c.getAppointment().getAppointmentID() : "N/A";
+                
+                String line = String.join("|", 
+                    c.getConsultationID(),
+                    c.getPatient().getPatientID(),
+                    c.getDoctor().getDoctorID(),
+                    appointmentIdStr,
+                    c.getDiagnosis(),
+                    c.getNotes(),
+                    c.getConsultationDate().toString()
+                );
                 writer.write(line);
                 writer.newLine();
             }
