@@ -6,7 +6,7 @@ package boundary;
 
 import entity.Patient;
 import control.PatientControl;
-import javax.swing.JOptionPane;
+import utility.ShowMessage;
 
 /**
  *
@@ -31,24 +31,111 @@ public class AddPatientUI extends javax.swing.JFrame {
         txtID.setEditable(true);
     }
 
-    /**
-     * NEW Constructor for "Edit Mode".
-     *
-     * @param patientToEdit The patient whose details will be edited.
-     * @param patientControl The controller to handle the update logic.
-     */
     public AddPatientUI(Patient patientToEdit, PatientControl patientControl) {
-        this.patientControl = patientControl;
-        this.patientToEdit = patientToEdit;
-        initComponents();
+        this(patientControl);
 
-        // Configure the form for editing
+        this.patientToEdit = patientToEdit;
+
         lblAddPatient.setText("Edit Patient Details");
         btnSave.setText("Update");
-        txtID.setEditable(false); // The ID cannot be changed
+        txtID.setEditable(false);
 
-        // Pre-fill the form with the patient's existing data
         populateForm(patientToEdit);
+    }
+
+    private boolean validateInput() {
+        // 1. Validate Patient ID (only in "Add Mode")
+        if (patientToEdit == null && txtID.getText().trim().isEmpty()) {
+            ShowMessage.showError(this, "Patient ID cannot be empty.");
+            txtID.requestFocus(); // Focus the component with the error
+            return false;
+        }
+
+        // 2. Validate Patient Name
+        String name = txtName.getText().trim();
+        if (name.isEmpty()) {
+            ShowMessage.showError(this, "Patient Name cannot be empty.");
+            txtName.requestFocus();
+            return false;
+        }
+        // This regex checks that the name contains only letters, spaces, and common punctuation.
+        if (!name.matches("^[\\p{L} .'-]+$")) {
+            ShowMessage.showError(this, "Please enter a valid name (letters and spaces only).");
+            txtName.requestFocus();
+            return false;
+        }
+
+        // 3. Validate Gender
+        if (!radMale.isSelected() && !radFemale.isSelected()) {
+            ShowMessage.showError(this, "Please select a gender.");
+            return false;
+        }
+
+        // 4. Validate Age
+        try {
+            int age = Integer.parseInt(ftfAge.getText().trim());
+            if (age < 1 || age > 120) {
+                ShowMessage.showError(this, "Please enter a valid age (1-120).");
+                ftfAge.requestFocus();
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            ShowMessage.showError(this, "Age must be a valid number.");
+            ftfAge.requestFocus();
+            return false;
+        }
+
+        // --- NEW AND IMPROVED CHECKS ---
+        // 5. Validate IC Number using isEditValid()
+        if (!ftfIcNumber.isEditValid()) {
+            ShowMessage.showError(this, "Please enter a complete and valid IC Number.");
+            ftfIcNumber.requestFocus();
+            return false;
+        }
+
+        // 6. Validate Contact Number using isEditValid()
+        if (!ftfContactNumber.isEditValid()) {
+            ShowMessage.showError(this, "Please enter a complete and valid Contact Number.");
+            ftfContactNumber.requestFocus();
+            return false;
+        }
+
+        // 7. Validate Email Format (optional field, but if filled, must be valid)
+        String email = txtEmail.getText().trim();
+        if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
+            ShowMessage.showError(this, "Please enter a valid email address (e.g., user@example.com).");
+            txtEmail.requestFocus();
+            return false;
+        }
+
+        return true;
+    }
+
+    private void populateForm(Patient p) {
+        txtID.setText(p.getPatientID());
+        txtName.setText(p.getName());
+        if ("Male".equals(p.getGender())) {
+            radMale.setSelected(true);
+        } else {
+            radFemale.setSelected(true);
+        }
+        ftfAge.setValue(p.getAge());
+        ftfIcNumber.setText(p.getIcNumber());
+        ftfContactNumber.setText(p.getContactNumber());
+        txtEmail.setText(p.getEmail());
+        txaMedicalHistory.setText(p.getMedicalHistory());
+    }
+
+    private void clearForm() {
+        txtID.setText("");
+        txtName.setText("");
+        bgGender.clearSelection();
+        ftfAge.setValue(null);
+        ftfIcNumber.setValue(null);
+        ftfContactNumber.setValue(null);
+        txtEmail.setText("");
+        txaMedicalHistory.setText("");
+        txtID.requestFocus();
     }
 
     /**
@@ -85,7 +172,7 @@ public class AddPatientUI extends javax.swing.JFrame {
         btnSave = new javax.swing.JButton();
         btnCancel = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         lblAddPatient.setText("Add New Patients");
 
@@ -261,83 +348,43 @@ public class AddPatientUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
-        String id = txtID.getText();
-        String name = txtName.getText();
+        if (!validateInput()) {
+            return;
+        }
+
+        String id = txtID.getText().trim();
+        String name = txtName.getText().trim();
+        String gender = radMale.isSelected() ? "Male" : "Female";
+        int age = Integer.parseInt(ftfAge.getText().trim()); // Safe to parse now
         String ic = ftfIcNumber.getText();
         String contact = ftfContactNumber.getText();
-        String email = txtEmail.getText();
+        String email = txtEmail.getText().trim();
         String medicalHistory = txaMedicalHistory.getText();
-
-        String gender = "";
-        if (radMale.isSelected()) {
-            gender = "Male";
-        } else if (radFemale.isSelected()) {
-            gender = "Female";
-        }
-
-        int age;
-        String ageText = ftfAge.getText().trim();
-        try {
-            if (ageText.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Age cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            age = Integer.parseInt(ageText);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter a valid number for age.", "Input Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (id.isEmpty() || name.isEmpty() || gender.isEmpty() || ic.contains(" ") || contact.contains(" ")) {
-            JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Input Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
 
         Patient patient = new Patient(id, name, gender, age, ic, contact, email, medicalHistory);
 
         if (patientToEdit == null) {
-            // "Add Mode": Call the addPatient method
-            patientControl.addPatient(patient);
-            this.dispose();
+            // "Add Mode"
+            if (patientControl.addPatient(patient)) {
+                ShowMessage.showSuccess(this, "Patient added successfully!");
+                this.dispose();
+            } else {
+                ShowMessage.showError(this, "A patient with ID " + patient.getPatientID() + " already exists.");
+            }
         } else {
-            // "Edit Mode": Call the updatePatient method
-            patientControl.updatePatient(patient);
-            this.dispose(); // Close the edit window after updating
+            // "Edit Mode"
+            if (patientControl.updatePatient(patient)) {
+                ShowMessage.showSuccess(this, "Patient details updated successfully!");
+                this.dispose();
+            } else {
+                ShowMessage.showError(this, "Failed to update patient. Record not found.");
+            }
         }
-
-        clearForm();
     }//GEN-LAST:event_btnSaveActionPerformed
 
     private void btnCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelActionPerformed
         this.dispose();
     }//GEN-LAST:event_btnCancelActionPerformed
-
-    private void populateForm(Patient p) {
-        txtID.setText(p.getPatientID());
-        txtName.setText(p.getName());
-        if ("Male".equals(p.getGender())) {
-            radMale.setSelected(true);
-        } else {
-            radFemale.setSelected(true);
-        }
-        ftfAge.setValue(p.getAge());
-        ftfIcNumber.setText(p.getIcNumber());
-        ftfContactNumber.setText(p.getContactNumber());
-        txtEmail.setText(p.getEmail());
-        txaMedicalHistory.setText(p.getMedicalHistory());
-    }
-
-    private void clearForm() {
-        txtID.setText("");
-        txtName.setText("");
-        bgGender.clearSelection();
-        ftfAge.setValue(null);
-        ftfIcNumber.setValue(null);
-        ftfContactNumber.setValue(null);
-        txtEmail.setText("");
-        txaMedicalHistory.setText("");
-        txtID.requestFocus();
-    }
 
     /**
      * @param args the command line arguments
