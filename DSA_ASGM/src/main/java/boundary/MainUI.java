@@ -16,6 +16,8 @@ import entity.Schedule;
 import entity.Consultation;
 import entity.Treatment;
 import entity.Appointment;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  *
@@ -90,10 +92,13 @@ public class MainUI extends JFrame {
         buttonPanel.add(btnConsultation);
         buttonPanel.add(btnTreatment);
         buttonPanel.add(btnPharmacy);
-
-        // --- Action Listeners ---
-        btnPatient.addActionListener(e -> {
-            System.out.println("Navigating to Patient Management Module...");
+        
+        btnPatient.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Navigating to Patient Management Module...");
+                new PatientListUI().setVisible(true);
+            }
         });
 
         btnDoctor.addActionListener(e -> {

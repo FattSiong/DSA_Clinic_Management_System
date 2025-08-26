@@ -10,7 +10,7 @@ import java.time.LocalTime;
  * @author tiong
  */
 public class Queue implements Comparable<Queue>{
-
+    
     private int queueNumber;
     private Patient patient; // Link to the patient
     private LocalTime entryTime;
@@ -22,6 +22,14 @@ public class Queue implements Comparable<Queue>{
         this.entryTime = entryTime;
         this.status = status;
     }
+    
+    public Queue(Patient patient, int newQueueNumber) {
+        this.queueNumber = newQueueNumber; // Assign the number passed from the control layer
+        this.patient = patient;
+        this.entryTime = LocalTime.now();
+        this.status = "Waiting";         
+    }
+
 
     // Getters
     public int getQueueNumber() {
