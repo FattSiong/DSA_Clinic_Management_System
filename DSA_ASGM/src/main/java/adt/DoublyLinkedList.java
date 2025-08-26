@@ -248,6 +248,50 @@ public class DoublyLinkedList<T extends Comparable<T>> implements ListInterface<
             lastNode = temp;
         }
     }
+    
+    /**
+     * Sorts the list using the insertion sort algorithm in DESCENDING order.
+     */
+    @Override
+    public void sortDescending() {
+        if (numberOfEntries <= 1) {
+            return; // Already sorted
+        }
+
+        Node sortedList = null; // This will be the head of the new sorted list
+        Node current = firstNode;
+
+        while (current != null) {
+            Node next = current.next;
+            current.previous = null;
+
+            // The logic is reversed here: use >= and >
+            if (sortedList == null || current.data.compareTo(sortedList.data) >= 0) {
+                // Insert at the beginning of the sorted list
+                current.next = sortedList;
+                if (sortedList != null) {
+                    sortedList.previous = current;
+                }
+                sortedList = current;
+            } else {
+                // Find the correct position to insert
+                Node temp = sortedList;
+                while (temp.next != null && temp.next.data.compareTo(current.data) > 0) {
+                    temp = temp.next;
+                }
+                // Insert 'current' after 'temp'
+                current.next = temp.next;
+                if (temp.next != null) {
+                    temp.next.previous = current;
+                }
+                temp.next = current;
+                current.previous = temp;
+            }
+            current = next;
+        }
+        firstNode = sortedList;
+        updateLastNode();
+    }
 
     /**
      * Sorts the list using the insertion sort algorithm based on a provided
