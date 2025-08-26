@@ -11,7 +11,7 @@ import java.time.LocalTime;
  *
  * @author tiong
  */
-public class Appointment {
+public class Appointment implements Comparable<Appointment> {
 
     private String appointmentID;
     private Patient patient; // Entity knowing another entity
@@ -77,6 +77,11 @@ public class Appointment {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+    
+    @Override
+    public int compareTo(Appointment other) {
+        return this.appointmentID.compareTo(other.getAppointmentID());
     }
 
     @Override

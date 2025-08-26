@@ -9,7 +9,7 @@ import java.time.LocalTime;
  *
  * @author tiong
  */
-public class Queue {
+public class Queue implements Comparable<Queue>{
 
     private int queueNumber;
     private Patient patient; // Link to the patient
@@ -55,6 +55,11 @@ public class Queue {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+    
+    @Override
+    public int compareTo(Queue other) {
+        return Integer.compare(this.queueNumber, other.getQueueNumber());
     }
 
     @Override

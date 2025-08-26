@@ -29,13 +29,13 @@ import java.util.Iterator;
 public class ReadWriteFile {
 
     // File paths (constants for easy management)
-    private static final String PATIENTS_FILE = "patients.txt";
-    private static final String DOCTORS_FILE = "doctors.txt";
-    private static final String MEDICINES_FILE = "medicines.txt";
-    private static final String SCHEDULES_FILE = "schedules.txt";
-    private static final String APPOINTMENTS_FILE = "appointments.txt";
-    private static final String CONSULTATIONS_FILE = "consultations.txt";
-    private static final String TREATMENTS_FILE = "treatments.txt";
+    private static final String PATIENTS_FILE = "src/main/java/Data File/patients";
+    private static final String DOCTORS_FILE = "src/main/java/Data File/doctors";
+    private static final String MEDICINES_FILE = "src/main/java/Data File/medicines";
+    private static final String SCHEDULES_FILE = "src/main/java/Data File/schedules";
+    private static final String APPOINTMENTS_FILE = "src/main/java/Data File/appointments";
+    private static final String CONSULTATIONS_FILE = "src/main/java/Data File/consultations";
+    private static final String TREATMENTS_FILE = "src/main/java/Data File/treatments";
 
     // --- Master Load and Save Methods ---
     /**
@@ -68,7 +68,7 @@ public class ReadWriteFile {
         // Load dependent entities
         readSchedulesFromFile(SCHEDULES_FILE, scheduleList, doctorList);
         readAppointmentsFromFile(APPOINTMENTS_FILE, appointmentList, patientList, doctorList);
-        readConsultationsFromFile(CONSULTATIONS_FILE, consultationList, appointmentList);
+        readConsultationsFromFile(CONSULTATIONS_FILE, consultationList, appointmentList, patientList, doctorList);
         readTreatmentsFromFile(TREATMENTS_FILE, treatmentList, consultationList, medicineList);
     }
 
@@ -102,12 +102,14 @@ public class ReadWriteFile {
     }
 
     // --- READ Methods ---
-    public void readPatientsFromFile(String filename, ListInterface<Patient> patientList) {
+    public static void readPatientsFromFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
-                patientList.add(new Patient(data[0], data[1], data[2], data[3], data[4], data[5]));
+                int age = Integer.parseInt(data[3]);
+                String medicalHistory = (data.length > 7) ? data[7].replace("<br>", "\n") : "";
+                patientList.add(new Patient(data[0], data[1], data[2], age, data[4], data[5], data[6], medicalHistory));
             }
         } catch (IOException e) {
             System.err.println("Error reading patients file: " + e.getMessage());
@@ -168,15 +170,33 @@ public class ReadWriteFile {
             System.err.println("Error reading appointments file: " + e.getMessage());
         }
     }
-
-    public void readConsultationsFromFile(String filename, ListInterface<Consultation> consultationList, ListInterface<Appointment> appointmentList) {
+    
+    public void readConsultationsFromFile(String filename, ListInterface<Consultation> consultationList, ListInterface<Appointment> appointmentList, ListInterface<Patient> patientList, ListInterface<Doctor> doctorList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
-                Appointment appointment = findAppointmentById(appointmentList, data[1]);
-                if (appointment != null) {
-                    consultationList.add(new Consultation(data[0], appointment, data[2], data[3], LocalDate.parse(data[4])));
+                String consultationID = data[0];
+                String patientID = data[1];
+                String doctorID = data[2];
+                String appointmentID = data[3];
+                String diagnosis = data[4];
+                String notes = data[5];
+                LocalDate consultationDate = LocalDate.parse(data[6]);
+
+                if (appointmentID.equals("N/A")) {
+                    // This is a walk-in consultation
+                    Patient patient = findPatientById(patientList, patientID);
+                    Doctor doctor = findDoctorById(doctorList, doctorID);
+                    if (patient != null && doctor != null) {
+                        consultationList.add(new Consultation(consultationID, patient, doctor, diagnosis, notes, consultationDate));
+                    }
+                } else {
+                    // This is a scheduled consultation
+                    Appointment appointment = findAppointmentById(appointmentList, appointmentID);
+                    if (appointment != null) {
+                        consultationList.add(new Consultation(consultationID, appointment, diagnosis, notes, consultationDate));
+                    }
                 }
             }
         } catch (IOException e) {
@@ -208,12 +228,13 @@ public class ReadWriteFile {
     }
 
     // --- WRITE Methods ---
-    public void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
+    public static void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             Iterator<Patient> it = patientList.getIterator();
             while (it.hasNext()) {
                 Patient p = it.next();
-                String line = String.join("|", p.getPatientID(), p.getName(), p.getIcNumber(), p.getContactNumber(), p.getEmail(), p.getMedicalHistory());
+                String sanitizedHistory = (p.getMedicalHistory() != null) ? p.getMedicalHistory().replace("\n", "<br>") : "";
+                String line = String.join("|", p.getPatientID(), p.getName(), p.getGender(), String.valueOf(p.getAge()), p.getIcNumber(), p.getContactNumber(), p.getEmail(), sanitizedHistory);
                 writer.write(line);
                 writer.newLine();
             }
@@ -277,13 +298,23 @@ public class ReadWriteFile {
             System.err.println("Error writing appointments file: " + e.getMessage());
         }
     }
-
+    
     public void writeConsultationsToFile(String filename, ListInterface<Consultation> consultationList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             Iterator<Consultation> it = consultationList.getIterator();
-            while (it.hasNext()) {
+            while(it.hasNext()){
                 Consultation c = it.next();
-                String line = String.join("|", c.getConsultationID(), c.getAppointment().getAppointmentID(), c.getDiagnosis(), c.getNotes(), c.getConsultationDate().toString());
+                String appointmentIdStr = (c.getAppointment() != null) ? c.getAppointment().getAppointmentID() : "N/A";
+                
+                String line = String.join("|", 
+                    c.getConsultationID(),
+                    c.getPatient().getPatientID(),
+                    c.getDoctor().getDoctorID(),
+                    appointmentIdStr,
+                    c.getDiagnosis(),
+                    c.getNotes(),
+                    c.getConsultationDate().toString()
+                );
                 writer.write(line);
                 writer.newLine();
             }

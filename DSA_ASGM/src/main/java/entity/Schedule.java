@@ -11,7 +11,7 @@ import java.time.LocalTime;
  *
  * @author tiong
  */
-public class Schedule {
+public class Schedule implements Comparable<Schedule> {
     private String scheduleID;
     private Doctor doctor; // Link to the doctor
     private LocalDate dutyDate;
@@ -76,6 +76,11 @@ public class Schedule {
 
     public void setAvailability(String availability) {
         this.availability = availability;
+    }
+    
+    @Override
+    public int compareTo(Schedule other) {
+        return this.scheduleID.compareTo(other.getScheduleID());
     }
 
     @Override
