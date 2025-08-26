@@ -116,10 +116,17 @@ import java.util.Comparator;
     public void sort();
     
     /**
+     * Sorts the elements in the list in descending order.
+     */
+    public void sortDescending();
+    
+    /**
      * Sorts the elements in the list according to the order induced by the specified
      * Comparator.
      *
      * @param comparator The Comparator used to determine the order of the list.
      */
     public void sort(Comparator<T> comparator);
+    
+    
 }
