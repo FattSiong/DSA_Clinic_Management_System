@@ -4,12 +4,15 @@
  */
 package adt;
 
+import java.util.Iterator;
+import java.util.Comparator;
+
 /**
  *
  * @author tiong
  * @param <T> The data type of the elements to be stored in the list.
  */
-    public interface ListInterface<T> {
+    public interface ListInterface<T extends Comparable<T>> {
 
     /**
      * Adds a new entry to the end of this list.
@@ -96,5 +99,27 @@ package adt;
      *
      * @return An iterator that allows traversing the list's entries.
      */
-    public java.util.Iterator<T> getIterator();
+    public Iterator<T> getIterator();
+    
+    /**
+     * Performs a binary search for a given entry in the list.
+     * The list must be sorted for this to work correctly.
+     *
+     * @param anEntry The entry to search for.
+     * @return The 1-based position of the entry if found, otherwise -1.
+     */
+    public int binarySearch(T anEntry);
+    
+    /**
+     * Sorts the elements in the list in ascending order.
+     */
+    public void sort();
+    
+    /**
+     * Sorts the elements in the list according to the order induced by the specified
+     * Comparator.
+     *
+     * @param comparator The Comparator used to determine the order of the list.
+     */
+    public void sort(Comparator<T> comparator);
 }

@@ -30,12 +30,12 @@ public class ReadWriteFile {
 
     // File paths (constants for easy management)
     private static final String PATIENTS_FILE = "src/main/java/Data File/patients";
-    private static final String DOCTORS_FILE = "doctors.txt";
-    private static final String MEDICINES_FILE = "medicines.txt";
-    private static final String SCHEDULES_FILE = "schedules.txt";
-    private static final String APPOINTMENTS_FILE = "appointments.txt";
-    private static final String CONSULTATIONS_FILE = "consultations.txt";
-    private static final String TREATMENTS_FILE = "treatments.txt";
+    private static final String DOCTORS_FILE = "src/main/java/Data File/doctors";
+    private static final String MEDICINES_FILE = "src/main/java/Data File/medicines";
+    private static final String SCHEDULES_FILE = "src/main/java/Data File/schedules";
+    private static final String APPOINTMENTS_FILE = "src/main/java/Data File/appointments";
+    private static final String CONSULTATIONS_FILE = "src/main/java/Data File/consultations";
+    private static final String TREATMENTS_FILE = "src/main/java/Data File/treatments";
 
     // --- Master Load and Save Methods ---
     /**

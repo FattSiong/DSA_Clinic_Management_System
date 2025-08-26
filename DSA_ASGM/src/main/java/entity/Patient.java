@@ -10,7 +10,7 @@ import java.util.Objects;
  *
  * @author tiong
  */
-public class Patient {
+public class Patient implements Comparable<Patient> {
 
     private String patientID;
     private String name;
@@ -109,6 +109,11 @@ public class Patient {
         final Patient other = (Patient) obj;
 
         return Objects.equals(this.patientID, other.patientID);
+    }
+    
+    @Override
+    public int compareTo(Patient other) {
+        return this.patientID.compareTo(other.getPatientID());
     }
 
     @Override

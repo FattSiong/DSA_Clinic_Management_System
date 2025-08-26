@@ -8,7 +8,7 @@ package entity;
  *
  * @author tiong
  */
-public class Medicine {
+public class Medicine implements Comparable<Medicine> {
     private String medicineID;
     private String name;
     private String description;
@@ -63,6 +63,11 @@ public class Medicine {
 
     public void setPrice(double price) {
         this.price = price;
+    }
+    
+    @Override
+    public int compareTo(Medicine other) {
+        return this.medicineID.compareTo(other.getMedicineID());
     }
 
     @Override

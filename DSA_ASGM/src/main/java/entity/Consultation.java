@@ -10,7 +10,7 @@ import java.time.LocalDate;
  *
  * @author tiong
  */
-public class Consultation {
+public class Consultation implements Comparable<Consultation> {
 
     private String consultationID;
     private Patient patient;         // Direct link to the patient
@@ -84,6 +84,11 @@ public class Consultation {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+    
+    @Override
+    public int compareTo(Consultation other) {
+        return this.consultationID.compareTo(other.getConsultationID());
     }
 
     @Override
