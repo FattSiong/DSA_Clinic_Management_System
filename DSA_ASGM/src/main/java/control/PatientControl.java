@@ -4,11 +4,10 @@
  */
 package control;
 
-import entity.Patient;
 import adt.DoublyLinkedList;
 import adt.ListInterface;
 import java.util.Iterator;
-import javax.swing.JOptionPane;
+import entity.Patient;
 import utility.ReadWriteFile;
 
 /**
@@ -40,24 +39,35 @@ public class PatientControl {
         return null;
     }
 
-    public void addPatient(Patient newPatient) {
+    public boolean addPatient(Patient newPatient) {
         if (patientList.contains(newPatient)) {
-            JOptionPane.showMessageDialog(null, "A patient with ID " + newPatient.getPatientID() + " already exists.", "Duplicate Error", JOptionPane.ERROR_MESSAGE);
+            return false;
         } else {
             patientList.add(newPatient);
             ReadWriteFile.writePatientsToFile(PATIENT_FILE, this.patientList);
-            JOptionPane.showMessageDialog(null, "Patient added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            return true;
         }
     }
 
-    public void updatePatient(Patient updatedPatient) {
+    public boolean updatePatient(Patient updatedPatient) {
         for (int i = 1; i <= patientList.getLength(); i++) {
             if (patientList.getEntry(i).getPatientID().equals(updatedPatient.getPatientID())) {
                 patientList.replace(i, updatedPatient);
                 ReadWriteFile.writePatientsToFile(PATIENT_FILE, this.patientList);
-                JOptionPane.showMessageDialog(null, "Patient details updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                return;
+                return true;
             }
         }
+        return false;
     }
+    
+    public boolean deletePatient(String patientId) {
+    for (int i = 1; i <= patientList.getLength(); i++) {
+        if (patientList.getEntry(i).getPatientID().equals(patientId)) {
+            patientList.remove(i);
+            ReadWriteFile.writePatientsToFile(PATIENT_FILE, this.patientList);
+            return true; // Deletion successful
+        }
+    }
+    return false; // Patient not found
+}
 }
