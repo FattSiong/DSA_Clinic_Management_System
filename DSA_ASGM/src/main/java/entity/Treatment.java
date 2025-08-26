@@ -11,7 +11,7 @@ import java.util.Iterator;
  *
  * @author tiong
  */
-public class Treatment {
+public class Treatment implements Comparable<Treatment> {
 
     private String treatmentID;
     private Consultation consultation; // Link to the consultation
@@ -60,6 +60,11 @@ public class Treatment {
         this.prescribedMedicine = prescribedMedicine;
     }
 
+    @Override
+    public int compareTo(Treatment other) {
+        return this.treatmentID.compareTo(other.getTreatmentID());
+    }
+    
     @Override
     public String toString() {
         // Build the string for the list of medicines manually using the iterator
