@@ -14,7 +14,7 @@ public class Medicine implements Comparable<Medicine> {
     private String description;
     private int stockQuantity;
     private double price;
-    //reorderLvl - 
+    //reorderLvl - stock threshold for triggering a low stock warning
     private int reorderLvl;
 
     public Medicine(String medicineID, String name, String description, int stockQuantity, double price, int reorderLvl) {
