@@ -14,13 +14,16 @@ public class Medicine implements Comparable<Medicine> {
     private String description;
     private int stockQuantity;
     private double price;
+    //reorderLvl - 
+    private int reorderLvl;
 
-    public Medicine(String medicineID, String name, String description, int stockQuantity, double price) {
+    public Medicine(String medicineID, String name, String description, int stockQuantity, double price, int reorderLvl) {
         this.medicineID = medicineID;
         this.name = name;
         this.description = description;
         this.stockQuantity = stockQuantity;
         this.price = price;
+        this.reorderLvl = reorderLvl;
     }
 
     // Getters
@@ -42,6 +45,11 @@ public class Medicine implements Comparable<Medicine> {
 
     public double getPrice() {
         return price;
+    }
+    
+    //Pharmacy - Melvin
+    public int getReorderLvl() {
+        return reorderLvl;
     }
 
     // Setters
@@ -65,6 +73,11 @@ public class Medicine implements Comparable<Medicine> {
         this.price = price;
     }
     
+    //Pharmacy - Melvin
+    public void setReorderLvl(int reorderLv) {
+        this.reorderLvl = reorderLvl;
+    }
+    
     @Override
     public int compareTo(Medicine other) {
         return this.medicineID.compareTo(other.getMedicineID());
@@ -78,6 +91,7 @@ public class Medicine implements Comparable<Medicine> {
                 + ", description='" + description + '\''
                 + ", stockQuantity=" + stockQuantity
                 + ", price=" + price
+                + ", reorderLvl=" + reorderLvl
                 + '}';
     }
 }
