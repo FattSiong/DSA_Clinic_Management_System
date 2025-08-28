@@ -1,0 +1,440 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+ */
+package boundary;
+
+import entity.Patient;
+import control.PatientControl;
+import utility.ShowMessage;
+
+/**
+ *
+ * @author hangg
+ */
+public class AddPatientUI extends javax.swing.JFrame {
+
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(AddPatientUI.class.getName());
+
+    private PatientControl patientControl;
+    private Patient patientToEdit;
+
+    /**
+     * Creates new form Patient
+     *
+     * @param patientControl
+     */
+    public AddPatientUI(PatientControl patientControl) {
+        this.patientControl = patientControl;
+        initComponents();
+        lblAddPatient.setText("Add New Patient");
+        txtID.setEditable(true);
+    }
+
+    public AddPatientUI(Patient patientToEdit, PatientControl patientControl) {
+        this(patientControl);
+
+        this.patientToEdit = patientToEdit;
+
+        lblAddPatient.setText("Edit Patient Details");
+        btnSave.setText("Update");
+        txtID.setEditable(false);
+
+        populateForm(patientToEdit);
+    }
+
+    private boolean validateInput() {
+        // 1. Validate Patient ID (only in "Add Mode")
+        if (patientToEdit == null && txtID.getText().trim().isEmpty()) {
+            ShowMessage.showError(this, "Patient ID cannot be empty.");
+            txtID.requestFocus(); // Focus the component with the error
+            return false;
+        }
+
+        // 2. Validate Patient Name
+        String name = txtName.getText().trim();
+        if (name.isEmpty()) {
+            ShowMessage.showError(this, "Patient Name cannot be empty.");
+            txtName.requestFocus();
+            return false;
+        }
+        // This regex checks that the name contains only letters, spaces, and common punctuation.
+        if (!name.matches("^[\\p{L} .'-]+$")) {
+            ShowMessage.showError(this, "Please enter a valid name (letters and spaces only).");
+            txtName.requestFocus();
+            return false;
+        }
+
+        // 3. Validate Gender
+        if (!radMale.isSelected() && !radFemale.isSelected()) {
+            ShowMessage.showError(this, "Please select a gender.");
+            return false;
+        }
+
+        // 4. Validate Age
+        try {
+            int age = Integer.parseInt(ftfAge.getText().trim());
+            if (age < 1 || age > 120) {
+                ShowMessage.showError(this, "Please enter a valid age (1-120).");
+                ftfAge.requestFocus();
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            ShowMessage.showError(this, "Age must be a valid number.");
+            ftfAge.requestFocus();
+            return false;
+        }
+
+        // --- NEW AND IMPROVED CHECKS ---
+        // 5. Validate IC Number using isEditValid()
+        if (!ftfIcNumber.isEditValid()) {
+            ShowMessage.showError(this, "Please enter a complete and valid IC Number.");
+            ftfIcNumber.requestFocus();
+            return false;
+        }
+
+        // 6. Validate Contact Number using isEditValid()
+        if (!ftfContactNumber.isEditValid()) {
+            ShowMessage.showError(this, "Please enter a complete and valid Contact Number.");
+            ftfContactNumber.requestFocus();
+            return false;
+        }
+
+        // 7. Validate Email Format (optional field, but if filled, must be valid)
+        String email = txtEmail.getText().trim();
+        if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
+            ShowMessage.showError(this, "Please enter a valid email address (e.g., user@example.com).");
+            txtEmail.requestFocus();
+            return false;
+        }
+
+        return true;
+    }
+
+    private void populateForm(Patient p) {
+        txtID.setText(p.getPatientID());
+        txtName.setText(p.getName());
+        if ("Male".equals(p.getGender())) {
+            radMale.setSelected(true);
+        } else {
+            radFemale.setSelected(true);
+        }
+        ftfAge.setValue(p.getAge());
+        ftfIcNumber.setText(p.getIcNumber());
+        ftfContactNumber.setText(p.getContactNumber());
+        txtEmail.setText(p.getEmail());
+        txaMedicalHistory.setText(p.getMedicalHistory());
+    }
+
+    private void clearForm() {
+        txtID.setText("");
+        txtName.setText("");
+        bgGender.clearSelection();
+        ftfAge.setValue(null);
+        ftfIcNumber.setValue(null);
+        ftfContactNumber.setValue(null);
+        txtEmail.setText("");
+        txaMedicalHistory.setText("");
+        txtID.requestFocus();
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        bgGender = new javax.swing.ButtonGroup();
+        lblAddPatient = new javax.swing.JLabel();
+        lblPatientDetails = new javax.swing.JLabel();
+        sprPatientDetails = new javax.swing.JSeparator();
+        lblID = new javax.swing.JLabel();
+        lblName = new javax.swing.JLabel();
+        lblGender = new javax.swing.JLabel();
+        lblAge = new javax.swing.JLabel();
+        lblIcNumber = new javax.swing.JLabel();
+        lblContactNumber = new javax.swing.JLabel();
+        lblEmail = new javax.swing.JLabel();
+        lblMedicalHistory = new javax.swing.JLabel();
+        txtID = new javax.swing.JTextField();
+        txtName = new javax.swing.JTextField();
+        radMale = new javax.swing.JRadioButton();
+        radFemale = new javax.swing.JRadioButton();
+        ftfAge = new javax.swing.JFormattedTextField();
+        ftfIcNumber = new javax.swing.JFormattedTextField();
+        ftfContactNumber = new javax.swing.JFormattedTextField();
+        txtEmail = new javax.swing.JTextField();
+        scrMedicalHistory = new javax.swing.JScrollPane();
+        txaMedicalHistory = new javax.swing.JTextArea();
+        btnSave = new javax.swing.JButton();
+        btnCancel = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+
+        lblAddPatient.setText("Add New Patients");
+
+        lblPatientDetails.setText("Patient Details");
+        lblPatientDetails.setPreferredSize(new java.awt.Dimension(100, 16));
+
+        lblID.setText("Patient ID");
+
+        lblName.setText("Patient Name");
+
+        lblGender.setText("Gender");
+
+        lblAge.setText("Age");
+
+        lblIcNumber.setText("IC Number");
+
+        lblContactNumber.setText("Contact Number");
+
+        lblEmail.setText("Email");
+
+        lblMedicalHistory.setText("Medical History");
+
+        bgGender.add(radMale);
+        radMale.setText("Male");
+
+        bgGender.add(radFemale);
+        radFemale.setText("Female");
+
+        ftfAge.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0"))));
+
+        try {
+            ftfIcNumber.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.MaskFormatter("######-##-####")));
+        } catch (java.text.ParseException ex) {
+            ex.printStackTrace();
+        }
+
+        try {
+            ftfContactNumber.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.MaskFormatter("###-########")));
+        } catch (java.text.ParseException ex) {
+            ex.printStackTrace();
+        }
+
+        txaMedicalHistory.setColumns(20);
+        txaMedicalHistory.setRows(5);
+        scrMedicalHistory.setViewportView(txaMedicalHistory);
+
+        btnSave.setText("Save");
+        btnSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveActionPerformed(evt);
+            }
+        });
+
+        btnCancel.setText("Cancel");
+        btnCancel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCancelActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(sprPatientDetails, javax.swing.GroupLayout.PREFERRED_SIZE, 256, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(lblAddPatient, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(lblPatientDetails, javax.swing.GroupLayout.DEFAULT_SIZE, 256, Short.MAX_VALUE)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(btnSave)
+                                    .addGap(18, 18, 18)
+                                    .addComponent(btnCancel))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(lblMedicalHistory, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(scrMedicalHistory, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(lblAge, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(lblGender, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(radMale, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(radFemale, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(ftfAge, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(lblEmail, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtEmail, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(lblIcNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(ftfIcNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(lblContactNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(ftfContactNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                                    .addComponent(lblName, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtName, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                                    .addComponent(lblID, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtID))))))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(lblAddPatient)
+                .addGap(18, 18, 18)
+                .addComponent(lblPatientDetails, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(sprPatientDetails, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblID, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblName, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblGender)
+                    .addComponent(radFemale)
+                    .addComponent(radMale))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblAge)
+                    .addComponent(ftfAge, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblIcNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(ftfIcNumber, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblContactNumber)
+                    .addComponent(ftfContactNumber, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblEmail)
+                    .addComponent(txtEmail, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(lblMedicalHistory)
+                    .addComponent(scrMedicalHistory, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnSave)
+                    .addComponent(btnCancel))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
+        if (!validateInput()) {
+            return;
+        }
+
+        String id = txtID.getText().trim();
+        String name = txtName.getText().trim();
+        String gender = radMale.isSelected() ? "Male" : "Female";
+        int age = Integer.parseInt(ftfAge.getText().trim()); // Safe to parse now
+        String ic = ftfIcNumber.getText();
+        String contact = ftfContactNumber.getText();
+        String email = txtEmail.getText().trim();
+        String medicalHistory = txaMedicalHistory.getText();
+
+        Patient patient = new Patient(id, name, gender, age, ic, contact, email, medicalHistory);
+
+        if (patientToEdit == null) {
+            // "Add Mode"
+            if (patientControl.addPatient(patient)) {
+                ShowMessage.showSuccess(this, "Patient added successfully!");
+                this.dispose();
+            } else {
+                ShowMessage.showError(this, "A patient with ID " + patient.getPatientID() + " already exists.");
+            }
+        } else {
+            // "Edit Mode"
+            if (patientControl.updatePatient(patient)) {
+                ShowMessage.showSuccess(this, "Patient details updated successfully!");
+                this.dispose();
+            } else {
+                ShowMessage.showError(this, "Failed to update patient. Record not found.");
+            }
+        }
+    }//GEN-LAST:event_btnSaveActionPerformed
+
+    private void btnCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelActionPerformed
+        this.dispose();
+    }//GEN-LAST:event_btnCancelActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        //java.awt.EventQueue.invokeLater(() -> new AddPatientUI().setVisible(true));
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.ButtonGroup bgGender;
+    private javax.swing.JButton btnCancel;
+    private javax.swing.JButton btnSave;
+    private javax.swing.JFormattedTextField ftfAge;
+    private javax.swing.JFormattedTextField ftfContactNumber;
+    private javax.swing.JFormattedTextField ftfIcNumber;
+    private javax.swing.JLabel lblAddPatient;
+    private javax.swing.JLabel lblAge;
+    private javax.swing.JLabel lblContactNumber;
+    private javax.swing.JLabel lblEmail;
+    private javax.swing.JLabel lblGender;
+    private javax.swing.JLabel lblID;
+    private javax.swing.JLabel lblIcNumber;
+    private javax.swing.JLabel lblMedicalHistory;
+    private javax.swing.JLabel lblName;
+    private javax.swing.JLabel lblPatientDetails;
+    private javax.swing.JRadioButton radFemale;
+    private javax.swing.JRadioButton radMale;
+    private javax.swing.JScrollPane scrMedicalHistory;
+    private javax.swing.JSeparator sprPatientDetails;
+    private javax.swing.JTextArea txaMedicalHistory;
+    private javax.swing.JTextField txtEmail;
+    private javax.swing.JTextField txtID;
+    private javax.swing.JTextField txtName;
+    // End of variables declaration//GEN-END:variables
+}
