@@ -37,7 +37,7 @@ public class ClinicManagementSystem {
     private static ListInterface<Consultation> consultationList = new DoublyLinkedList<>();
     private static ListInterface<Treatment> treatmentList = new DoublyLinkedList<>();
     private static ListInterface<DispensedItem> dispensedItemList = new DoublyLinkedList<>();
-        private static ListInterface<DispensingRecord> dispensingRecordList = new DoublyLinkedList<>();
+    private static ListInterface<DispensingRecord> dispensingRecordList = new DoublyLinkedList<>();
 
     // --- Data Manager ---
     private static ReadWriteFile readWriteFile = new ReadWriteFile();
