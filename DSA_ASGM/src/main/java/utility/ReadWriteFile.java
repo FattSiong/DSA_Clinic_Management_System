@@ -40,8 +40,7 @@ public class ReadWriteFile {
     private static final String APPOINTMENTS_FILE = "src/main/java/Data File/appointments";
     private static final String CONSULTATIONS_FILE = "src/main/java/Data File/consultations";
     private static final String TREATMENTS_FILE = "src/main/java/Data File/treatments";
-    private static final String DISPENSED_ITEM_FILE = "src/main/java/Data File/dispensed item";
-    private static final String DISPENSING_RECORD_FILE = "src/main/java/Data File/dispensing record item";
+    private static final String DISPENSING_RECORD_FILE = "src/main/java/Data File/dispensingRecord";
 
     // --- Master Load and Save Methods ---
     /**
@@ -372,7 +371,7 @@ public class ReadWriteFile {
             Iterator<Medicine> it = medicineList.getIterator();
             while (it.hasNext()) {
                 Medicine m = it.next();
-                String line = String.join("|", m.getMedicineID(), m.getName(), m.getDescription(), String.valueOf(m.getStockQuantity()), String.valueOf(m.getPrice()));
+                String line = String.join("|", m.getMedicineID(), m.getName(), m.getDescription(), String.valueOf(m.getStockQuantity()), String.valueOf(m.getPrice()), String.valueOf(m.getReorderLvl()));
                 writer.write(line);
                 writer.newLine();
             }

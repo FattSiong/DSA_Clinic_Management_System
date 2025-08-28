@@ -122,7 +122,8 @@ public class MainUI extends JFrame {
         });
 
         btnPharmacy.addActionListener(e -> {
-            System.out.println("Navigating to Pharmacy Management Module...");
+            new PharmacyUI(this, dispensingRecordList).setVisible(true);
+            this.setVisible(false);
         });
 
         // --- Footer Panel (SOUTH) ---
