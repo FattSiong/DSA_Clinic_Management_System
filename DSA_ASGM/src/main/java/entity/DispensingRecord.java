@@ -14,8 +14,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.Objects;
+import entity.DispensedItem;
 
 public class DispensingRecord implements Comparable<DispensingRecord> {
+
     private String recordId;
     private String patientName;
     private String doctorName;
@@ -29,7 +31,6 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
         this.patientName = patientName;
         this.doctorName = doctorName;
         this.dispensingDateTime = LocalDateTime.now();
-        this.dispensedItems = new DoublyLinkedList<>();
         this.totalAmount = 0.0;
     }
 
@@ -40,17 +41,27 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
     }
 
     // Getters
-    public String getRecordId() { return recordId; }
-    public LocalDateTime getDispensingDateTime() { return dispensingDateTime; }
-    public double getTotalAmount() { return totalAmount; }
-    public ListInterface<DispensedItem> getDispensedItems() { return dispensedItems; }
+    public String getRecordId() {
+        return recordId;
+    }
 
+    public LocalDateTime getDispensingDateTime() {
+        return dispensingDateTime;
+    }
+
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public ListInterface<DispensedItem> getDispensedItems() {
+        return dispensedItems;
+    }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        
+
         sb.append("==============================================\n");
         sb.append("Dispensing Record ID: ").append(recordId).append("\n");
         sb.append("Date: ").append(dispensingDateTime.format(formatter)).append("\n");
@@ -73,11 +84,15 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
     public int compareTo(DispensingRecord other) {
         return this.recordId.compareTo(other.getRecordId());
     }
-    
+
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         DispensingRecord that = (DispensingRecord) obj;
         return Objects.equals(recordId, that.recordId);
     }

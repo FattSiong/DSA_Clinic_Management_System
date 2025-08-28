@@ -20,6 +20,7 @@ import boundary.MainUI;
  *
  * @author tiong
  */
+
 public class ConsultationUI extends JFrame {
 
     private JTable appointmentsTable;

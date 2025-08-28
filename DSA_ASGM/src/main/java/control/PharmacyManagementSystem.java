@@ -15,6 +15,12 @@ import entity.DispensingRecord;
 import entity.Medicine;
 import java.util.Iterator;
 import java.util.Scanner;
+import java.io.FileWriter;
+import utility.ReadWriteFile;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class PharmacyManagementSystem {
 
@@ -82,109 +88,94 @@ public class PharmacyManagementSystem {
         return null; // Not found
     }
 
-    public void viewAllMedicines() {
-        System.out.println("\n--- Current Medicine Inventory ---");
-        if (medicineStock.isEmpty()) {
-            System.out.println("Inventory is empty.");
-            return;
-        }
-        Iterator<Medicine> iterator = medicineStock.getIterator();
-        while (iterator.hasNext()) {
-            System.out.println(iterator.next());
-        }
-        System.out.println("------------------------------------");
-    }
+    /**
+     * Generates a full inventory report and saves it to a text file. This
+     * method replaces the old viewAllMedicines() for file output.
+     */
+    public void generateInventoryReport(String filename) {
+        System.out.println("\nGenerating inventory report...");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
 
-    // ========== 2. Medicine Dispensing ==========
-    public void createDispensingRecord() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("\nEnter Patient Name: ");
-        String patientName = scanner.nextLine();
-        System.out.print("Enter Doctor Name: ");
-        String doctorName = scanner.nextLine();
+            writer.println("===== Full Medicine Inventory Report =====");
+            writer.println("Generated on: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            writer.println("==========================================");
 
-        String recordId = "REC" + String.format("%04d", nextRecordId++);
-        DispensingRecord newRecord = new DispensingRecord(recordId, patientName, doctorName);
-
-        String medicineId;
-        while (true) {
-            System.out.print("Enter Medicine ID to dispense (or 'done' to finish): ");
-            medicineId = scanner.nextLine().toUpperCase();
-            if (medicineId.equalsIgnoreCase("done")) {
-                break;
-            }
-
-            Medicine medicineToDispense = findMedicineById(medicineId);
-
-            if (medicineToDispense == null) {
-                System.out.println("Error: Medicine ID not found in stock.");
-                continue;
-            }
-
-            System.out.print("Enter quantity for " + medicineToDispense.getName() + ": ");
-            int quantity = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
-
-            // Stock validation
-            if (quantity <= 0) {
-                System.out.println("Error: Quantity must be positive.");
-            } else if (medicineToDispense.getStockQuantity() < quantity) {
-                System.out.println("Error: Insufficient stock. Available: " + medicineToDispense.getStockQuantity());
+            if (medicineStock.isEmpty()) {
+                writer.println("Inventory is empty.");
             } else {
-                // All checks passed, process the item
-                // 1. Update stock
-                int newStock = medicineToDispense.getStockQuantity() - quantity;
-                medicineToDispense.setStockQuantity(newStock);
-
-                // 2. Add to record
-                DispensedItem item = new DispensedItem(medicineToDispense, quantity);
-                newRecord.addItem(item);
-
-                System.out.println("Added to prescription.");
+                Iterator<Medicine> iterator = medicineStock.getIterator();
+                while (iterator.hasNext()) {
+                    writer.println(iterator.next().toString());
+                }
             }
-        }
 
-        if (!newRecord.getDispensedItems().isEmpty()) {
-            dispensingHistory.add(newRecord);
-            System.out.println("\nDispensing complete. Final record:");
-            System.out.println(newRecord);
-        } else {
-            System.out.println("\nNo items were dispensed. Record cancelled.");
-            nextRecordId--; // Rollback ID if record is empty
+            System.out.println("Success! Inventory report saved to " + filename);
+
+        } catch (IOException e) {
+            System.out.println("Error: An error occurred while writing to the file: " + e.getMessage());
         }
     }
 
-    // ========== 3. Reporting Features ==========
-    public void generateLowStockReport() {
-        System.out.println("\n--- Low Stock Report ---");
-        boolean found = false;
-        Iterator<Medicine> iterator = medicineStock.getIterator();
-        while (iterator.hasNext()) {
-            Medicine medicine = iterator.next();
-            if (medicine.getStockQuantity() <= medicine.getReorderLvl()) {
-                System.out.printf("LOW STOCK ALERT: %s (Qty: %d, Reorder Lvl: %d)\n",
-                        medicine.getName(), medicine.getStockQuantity(), medicine.getReorderLvl());
-                found = true;
+    /**
+     * Generates a report of all medicines with stock at or below their reorder
+     * level and saves it to a text file.
+     */
+    public void generateLowStockReport(String filename) {
+        System.out.println("\nGenerating low stock report...");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+
+            writer.println("===== Low Stock Report =====");
+            writer.println("Generated on: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            writer.println("============================");
+
+            boolean foundLowStock = false;
+            Iterator<Medicine> iterator = medicineStock.getIterator();
+            while (iterator.hasNext()) {
+                Medicine medicine = iterator.next();
+                if (medicine.getStockQuantity() <= medicine.getReorderLvl()) {
+                    writer.printf("LOW STOCK: %s (Current Stock: %d, Reorder Level: %d)\n",
+                            medicine.getName(), medicine.getStockQuantity(), medicine.getReorderLvl());
+                    foundLowStock = true;
+                }
             }
+
+            if (!foundLowStock) {
+                writer.println("All medicines are sufficiently stocked.");
+            }
+
+            System.out.println("Success! Low stock report saved to " + filename);
+
+        } catch (IOException e) {
+            System.out.println("Error: An error occurred while writing to the file: " + e.getMessage());
         }
-        if (!found) {
-            System.out.println("All medicines are above their reorder level.");
-        }
-        System.out.println("--------------------------");
     }
 
-    public void generateDispensingHistoryReport() {
-        System.out.println("\n--- Full Dispensing History ---");
-        if (dispensingHistory.isEmpty()) {
-            System.out.println("No dispensing records found.");
-            return;
-        }
+    /**
+     * Generates a complete history of all dispensing records and saves it to a
+     * text file.
+     */
+    public void generateDispensingHistoryReport(String filename) {
+        System.out.println("\nGenerating dispensing history report...");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
 
-        // You could sort the history before displaying, e.g., by ID
-        // dispensingHistory.sort(); // Assuming your record ID increments
-        Iterator<DispensingRecord> iterator = dispensingHistory.getIterator();
-        while (iterator.hasNext()) {
-            System.out.println(iterator.next());
+            writer.println("===== Full Dispensing History Report =====");
+            writer.println("Generated on: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            writer.println("========================================");
+
+            if (dispensingHistory.isEmpty()) {
+                writer.println("No dispensing records found.");
+            } else {
+                Iterator<DispensingRecord> iterator = dispensingHistory.getIterator();
+                while (iterator.hasNext()) {
+                    writer.println(iterator.next().toString());
+                    writer.println(); // Add a blank line for better separation
+                }
+            }
+
+            System.out.println("Success! Dispensing history report saved to " + filename);
+
+        } catch (IOException e) {
+            System.out.println("Error: An error occurred while writing to the file: " + e.getMessage());
         }
     }
 }

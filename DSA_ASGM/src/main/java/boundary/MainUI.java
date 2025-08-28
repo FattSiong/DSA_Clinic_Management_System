@@ -16,6 +16,8 @@ import entity.Schedule;
 import entity.Consultation;
 import entity.Treatment;
 import entity.Appointment;
+import entity.DispensedItem;
+import entity.DispensingRecord;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -32,12 +34,15 @@ public class MainUI extends JFrame {
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
     private ListInterface<Treatment> treatmentList;
+    private ListInterface<DispensedItem> dispensedItemList;
+    private ListInterface<DispensingRecord> dispensingRecordList;
 
     public MainUI(
             ListInterface<Patient> patientList, ListInterface<Doctor> doctorList,
             ListInterface<Medicine> medicineList, ListInterface<Schedule> scheduleList,
             ListInterface<Appointment> appointmentList, ListInterface<Consultation> consultationList,
-            ListInterface<Treatment> treatmentList) {
+            ListInterface<Treatment> treatmentList, ListInterface<DispensedItem> dispensedItemList,
+            ListInterface<DispensingRecord> dispensingRecordList) {
 
         this.patientList = patientList;
         this.doctorList = doctorList;
@@ -46,6 +51,8 @@ public class MainUI extends JFrame {
         this.appointmentList = appointmentList;
         this.consultationList = consultationList;
         this.treatmentList = treatmentList;
+        this.dispensedItemList = dispensedItemList;
+        this.dispensingRecordList = dispensingRecordList;
 
         // --- Frame Setup ---
         setTitle("TAR UMT Clinic Management System");
@@ -92,7 +99,7 @@ public class MainUI extends JFrame {
         buttonPanel.add(btnConsultation);
         buttonPanel.add(btnTreatment);
         buttonPanel.add(btnPharmacy);
-        
+
         btnPatient.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

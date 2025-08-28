@@ -14,6 +14,8 @@ import entity.Patient;
 import entity.Queue;
 import entity.Schedule;
 import entity.Treatment;
+import entity.DispensedItem;
+import entity.DispensingRecord;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -38,6 +40,8 @@ public class ReadWriteFile {
     private static final String APPOINTMENTS_FILE = "src/main/java/Data File/appointments";
     private static final String CONSULTATIONS_FILE = "src/main/java/Data File/consultations";
     private static final String TREATMENTS_FILE = "src/main/java/Data File/treatments";
+    private static final String DISPENSED_ITEM_FILE = "src/main/java/Data File/dispensed item";
+    private static final String DISPENSING_RECORD_FILE = "src/main/java/Data File/dispensing record item";
 
     // --- Master Load and Save Methods ---
     /**
@@ -53,6 +57,8 @@ public class ReadWriteFile {
      * @param appointmentList
      * @param consultationList
      * @param treatmentList
+     * @param dispensedItemList
+     * @param dispensingRecordList
      */
     public void loadAllData(
             ListInterface<Patient> patientList,
@@ -62,7 +68,10 @@ public class ReadWriteFile {
             ListInterface<Schedule> scheduleList,
             ListInterface<Appointment> appointmentList,
             ListInterface<Consultation> consultationList,
-            ListInterface<Treatment> treatmentList) {
+            ListInterface<Treatment> treatmentList,
+            ListInterface<DispensedItem> dispensedItemList,
+            ListInterface<DispensingRecord> dispensingRecordList
+    ) {
 
         // Load independent entities first
         readPatientsFromFile(PATIENTS_FILE, patientList);
@@ -75,6 +84,7 @@ public class ReadWriteFile {
         readAppointmentsFromFile(APPOINTMENTS_FILE, appointmentList, patientList, doctorList);
         readConsultationsFromFile(CONSULTATIONS_FILE, consultationList, appointmentList, patientList, doctorList);
         readTreatmentsFromFile(TREATMENTS_FILE, treatmentList, consultationList, medicineList);
+        readDispensingRecordFromFile(DISPENSING_RECORD_FILE, dispensingRecordList, medicineList);
     }
 
     /**
@@ -89,6 +99,8 @@ public class ReadWriteFile {
      * @param appointmentList
      * @param consultationList
      * @param treatmentList
+     * @param dispensedItemList
+     * @param dispensingRecordList
      */
     public void saveAllData(
             ListInterface<Patient> patientList,
@@ -98,7 +110,10 @@ public class ReadWriteFile {
             ListInterface<Schedule> scheduleList,
             ListInterface<Appointment> appointmentList,
             ListInterface<Consultation> consultationList,
-            ListInterface<Treatment> treatmentList) {
+            ListInterface<Treatment> treatmentList,
+            ListInterface<DispensedItem> dispensedItemList,
+            ListInterface<DispensingRecord> dispensingRecordList
+    ) {
 
         writePatientsToFile(PATIENTS_FILE, patientList);
         writeQueuesToFile(QUEUES_FILE, queueList);
@@ -108,6 +123,7 @@ public class ReadWriteFile {
         writeAppointmentsToFile(APPOINTMENTS_FILE, appointmentList);
         writeConsultationsToFile(CONSULTATIONS_FILE, consultationList);
         writeTreatmentsToFile(TREATMENTS_FILE, treatmentList);
+        writeDispensingRecordToFile(DISPENSING_RECORD_FILE, dispensingRecordList);
     }
 
     // --- READ Methods ---
@@ -124,7 +140,7 @@ public class ReadWriteFile {
             System.err.println("Error reading patients file: " + e.getMessage());
         }
     }
-    
+
     public void readQueuesFromFile(String filename, ListInterface<Queue> queueList, ListInterface<Patient> patientList, ListInterface<Doctor> doctorList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
@@ -141,7 +157,7 @@ public class ReadWriteFile {
                 if (patient != null) {
                     // Use the full constructor to recreate the object
                     Queue queueEntry = new Queue(queueId, queueNumber, patient, doctor, entryTime, exitTime, status);
-                queueList.add(queueEntry);
+                    queueList.add(queueEntry);
                 }
             }
         } catch (IOException | NumberFormatException e) {
@@ -166,7 +182,7 @@ public class ReadWriteFile {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
-                medicineList.add(new Medicine(data[0], data[1], data[2], Integer.parseInt(data[3]), Double.parseDouble(data[4])));
+                medicineList.add(new Medicine(data[0], data[1], data[2], Integer.parseInt(data[3]), Double.parseDouble(data[4]), Integer.parseInt(data[5])));
             }
         } catch (IOException | NumberFormatException e) {
             System.err.println("Error reading medicines file: " + e.getMessage());
@@ -260,6 +276,38 @@ public class ReadWriteFile {
         }
     }
 
+    public void readDispensingRecordFromFile(String filename, ListInterface<DispensingRecord> dispensingRecordList, ListInterface<Medicine> medicineList) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split("\\|");
+                if (data.length < 5) {
+                    continue; //skip incompleted lines
+                }
+                String recordId = data[0];
+                String patientName = data[1];
+                String doctorName = data[2];
+
+                DispensingRecord record = new DispensingRecord(recordId, patientName, doctorName);
+
+                String[] itemsData = data[4].split(".");
+                for (String itemStr : itemsData) {
+                    String[] itemParts = itemStr.split(":");
+                    if (itemParts.length == 2) {
+                        Medicine medicine = findMedicineById(medicineList, itemParts[0]);
+                        int quantity = Integer.parseInt(itemParts[1]);
+                        if (medicine != null) {
+                            record.addItem(new DispensedItem(medicine, quantity));
+                        }
+                    }
+                }
+                dispensingRecordList.add(record);
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Error reading dispensing records file : " + e.getMessage());
+        }
+    }
+
     // --- WRITE Methods ---
     public static void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
@@ -275,10 +323,12 @@ public class ReadWriteFile {
             System.err.println("Error writing patients file: " + e.getMessage());
         }
     }
-    
+
     public void writeQueuesToFile(String filename, ListInterface<Queue> queueList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-            if (queueList == null) return;
+            if (queueList == null) {
+                return;
+            }
             Iterator<Queue> it = queueList.getIterator();
             while (it.hasNext()) {
                 Queue q = it.next();
@@ -402,6 +452,40 @@ public class ReadWriteFile {
             }
         } catch (IOException e) {
             System.err.println("Error writing treatments file: " + e.getMessage());
+        }
+    }
+
+    public static void writeDispensingRecordToFile(String filename, ListInterface<DispensingRecord> DispensingRecordList) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            Iterator<DispensingRecord> it = DispensingRecordList.getIterator();
+            while (it.hasNext()) {
+                DispensingRecord rec = it.next();
+                
+                StringBuilder itemsStr = new StringBuilder();
+                Iterator<DispensedItem> itemIt = rec.getDispensedItems().getIterator();
+                while(itemIt.hasNext()){
+                    DispensedItem item = itemIt.next();
+                    itemsStr.append(item.getMedicine().getMedicineID())
+                            .append(":")
+                            .append(item.getQuantityDispensed());
+                    if(itemIt.hasNext()){
+                        itemsStr.append(",");
+                    }
+                }
+                
+                String line = String.join("|",
+                        rec.getRecordId(),
+                        "PatientNamePlaceholder",
+                        "DoctorNamePlaceholder",
+                        rec.getDispensingDateTime().toString(),
+                        itemsStr.toString(),
+                        String.valueOf(rec.getTotalAmount())
+                );  
+                writer.write(line);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.err.println("Error writing dispensing record file: " + e.getMessage());
         }
     }
 

@@ -6,16 +6,16 @@ package entity;
 
 /**
  *
- * @author tiong
+ * @author Melvin
  */
 public class Medicine implements Comparable<Medicine> {
+
     private String medicineID;
     private String name;
     private String description;
     private int stockQuantity;
     private double price;
-    //reorderLvl - stock threshold for triggering a low stock warning
-    private int reorderLvl;
+    private int reorderLvl; //stock threshold for triggering a low stock warning
 
     public Medicine(String medicineID, String name, String description, int stockQuantity, double price, int reorderLvl) {
         this.medicineID = medicineID;
@@ -46,8 +46,7 @@ public class Medicine implements Comparable<Medicine> {
     public double getPrice() {
         return price;
     }
-    
-    //Pharmacy - Melvin
+
     public int getReorderLvl() {
         return reorderLvl;
     }
@@ -72,12 +71,11 @@ public class Medicine implements Comparable<Medicine> {
     public void setPrice(double price) {
         this.price = price;
     }
-    
-    //Pharmacy - Melvin
+
     public void setReorderLvl(int reorderLv) {
         this.reorderLvl = reorderLvl;
     }
-    
+
     @Override
     public int compareTo(Medicine other) {
         return this.medicineID.compareTo(other.getMedicineID());

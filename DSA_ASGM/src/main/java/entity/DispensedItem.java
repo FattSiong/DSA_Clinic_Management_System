@@ -8,7 +8,9 @@ package entity;
  *
  * @author Melvin
  */
-public class DispensedItem {
+public class DispensedItem implements Comparable<DispensedItem> {
+    
+    private String recordId;
     private Medicine medicine; // A reference to the medicine dispensed
     private int quantityDispensed;
 
@@ -17,13 +19,30 @@ public class DispensedItem {
         this.quantityDispensed = quantityDispensed;
     }
     
-    public Medicine getMedicine() { return medicine; }
-    public int getQuantityDispensed() { return quantityDispensed; }
-    public double getSubtotal() { return medicine.getPrice() * quantityDispensed; }
+    public String getRecordId() {
+        return recordId;
+    }
+
+    public Medicine getMedicine() {
+        return medicine;
+    }
+
+    public int getQuantityDispensed() {
+        return quantityDispensed;
+    }
+
+    public double getSubtotal() {
+        return medicine.getPrice() * quantityDispensed;
+    }
+
+    @Override
+    public int compareTo(DispensedItem other) {
+        return 0;
+    }
 
     @Override
     public String toString() {
-        return String.format("  - %-25s | Qty: %-4d | Subtotal: $%.2f",
-                medicine.getName(), quantityDispensed, getSubtotal());
+        return String.format("%-5s |  - %-25s | Qty: %-4d | Subtotal: $%.2f",
+                getRecordId(),medicine.getName(), quantityDispensed, getSubtotal());
     }
 }
