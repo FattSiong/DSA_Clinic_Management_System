@@ -4,16 +4,20 @@
  */
 package boundary;
 
+import utility.ReadWriteFile;
+import javax.swing.*;
+import java.awt.*;
 import adt.ListInterface;
 import control.AppointmentControl;
-import utility.ReadWriteFile;
 import entity.Appointment;
 import entity.Doctor;
 import entity.Patient;
-import javax.swing.*;
+import utility.AppointmentComparators;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.Iterator;
 
 /**
@@ -26,6 +30,8 @@ public class ManageAppointmentUI extends JFrame {
     private DefaultTableModel tableModel;
     private ListInterface<Appointment> fullAppointmentList;
     private ListInterface<Appointment> filteredAppointmentList;
+    private ListInterface<Doctor> doctorList;
+    private ListInterface<Patient> patientList;
     private ReadWriteFile fileManager;
     private AppointmentControl appointmentControl;
 
@@ -36,11 +42,16 @@ public class ManageAppointmentUI extends JFrame {
     private JLabel pageLabel = new JLabel();
     private int currentPage = 1;
     private final int ROWS_PER_PAGE = 20;
+    
+    private int lastSortedColumn = -1;
+    private boolean isAscending = true;
 
     public ManageAppointmentUI(ListInterface<Appointment> appList, ListInterface<Patient> pList, ListInterface<Doctor> dList, ReadWriteFile manager) {
         this.fullAppointmentList = appList;
         this.filteredAppointmentList = appList;
         this.fileManager = manager;
+        this.patientList = pList;
+        this.doctorList = dList;
         this.appointmentControl = new AppointmentControl(appList, pList, dList);
 
         setTitle("Manage All Appointments");
@@ -93,6 +104,14 @@ public class ManageAppointmentUI extends JFrame {
         appointmentTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 14));
         appointmentTable.getTableHeader().setBackground(new Color(230, 230, 230));
         contentPanel.add(new JScrollPane(appointmentTable), BorderLayout.CENTER);
+        
+        appointmentTable.getTableHeader().addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int col = appointmentTable.columnAtPoint(e.getPoint());
+                sortAppointmentsByColumn(col);
+            }
+        });
 
         // --- Pagination Panel ---
         JPanel paginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -110,6 +129,11 @@ public class ManageAppointmentUI extends JFrame {
         JButton btnEdit = new JButton("Edit Selected");
         JButton btnDelete = new JButton("Delete Selected");
         JButton btnBack = new JButton("Back");
+        
+        styleButton(btnEdit);
+        styleButton(btnDelete, new Color(240, 173, 78));
+        styleButton(btnBack, new Color(217, 83, 79));
+        
         actionsPanel.add(btnEdit);
         actionsPanel.add(btnDelete);
         actionsPanel.add(btnBack);
@@ -194,10 +218,38 @@ public class ManageAppointmentUI extends JFrame {
         }
     }
 
+    public void refreshTableAndSave() {
+        loadAllAppointments();
+        fileManager.writeAppointmentsToFile("appointments.txt", fullAppointmentList);
+    }
+
     private void editSelectedAppointment() {
-        // This would require an "edit mode" for the AppointmentFormUI.
-        // For simplicity, we will just show a message.
-        JOptionPane.showMessageDialog(this, "Edit functionality would open the booking form pre-filled with data.", "Info", JOptionPane.INFORMATION_MESSAGE);
+        int selectedRow = appointmentTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this, "Please select an appointment to edit.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
+        
+        // Find the full Appointment object from the list
+        Appointment selectedAppointment = null;
+        Iterator<Appointment> it = fullAppointmentList.getIterator();
+        while(it.hasNext()){
+            Appointment app = it.next();
+            if(app.getAppointmentID().equals(appointmentId)){
+                selectedAppointment = app;
+                break;
+            }
+        }
+
+        if (selectedAppointment != null) {
+            if (selectedAppointment.getStatus().equals("Canceled") || selectedAppointment.getStatus().equals("Completed")) {
+                JOptionPane.showMessageDialog(this, "Canceled or Completed appointments cannot be edited.", "Action Not Allowed", JOptionPane.WARNING_MESSAGE);
+                return; // Stop the process here
+            }
+            
+            new EditAppointmentUI(this, selectedAppointment, doctorList, appointmentControl).setVisible(true);
+        }
     }
 
     private void deleteSelectedAppointment() {
@@ -220,5 +272,48 @@ public class ManageAppointmentUI extends JFrame {
                 JOptionPane.showMessageDialog(this, result, "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+    
+    private void sortAppointmentsByColumn(int columnIndex) {
+        Comparator<Appointment> comparator = null;
+        switch (columnIndex) {
+            case 0: comparator = new AppointmentComparators.SortById(); break;
+            case 1: comparator = new AppointmentComparators.SortByPatientName(); break;
+            case 2: comparator = new AppointmentComparators.SortByDoctorName(); break;
+            case 3: comparator = new AppointmentComparators.SortByDate(); break;
+            case 5: comparator = new AppointmentComparators.SortByStatus(); break;
+            default: return; // No sorting for this column
+        }
+        
+        // Check if the same column is clicked again to toggle the order
+        if (columnIndex == lastSortedColumn) {
+            isAscending = !isAscending;
+        } else {
+            isAscending = true; // Default to ascending for a new column
+            lastSortedColumn = columnIndex;
+        }
+
+        // Perform the sort
+        if (isAscending) {
+            fullAppointmentList.sort(comparator);
+        } else {
+            fullAppointmentList.sortDescending(comparator); // Use the new descending sort method
+        }
+        
+        // Refresh the table to show the sorted data
+        loadAllAppointments();
+    }
+    
+    private void styleButton(JButton button) {
+        styleButton(button, new Color(92, 184, 92)); // Default green color
+    }
+
+    private void styleButton(JButton button, Color color) {
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
     }
 }

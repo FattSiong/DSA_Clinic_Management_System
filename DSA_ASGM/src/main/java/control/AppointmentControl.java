@@ -137,4 +137,44 @@ public class AppointmentControl {
         }
         return filteredList;
     }
+    
+    /**
+     * Handles the logic for editing an existing appointment.
+     * @return A String indicating the result.
+     */
+    public String editAppointment(Appointment appointmentToEdit, String newDoctorId, LocalDate newDate, LocalTime newTime) {
+        // --- Validation ---
+        LocalDateTime newDateTime = LocalDateTime.of(newDate, newTime);
+        if (newDateTime.isBefore(LocalDateTime.now())) {
+            return "Error: Cannot schedule an appointment in the past.";
+        }
+
+        // --- Business Logic: Check for scheduling conflicts ---
+        Iterator<Appointment> it = appointmentList.getIterator();
+        while (it.hasNext()) {
+            Appointment existingApp = it.next();
+            // Skip the check if it's the same appointment we are editing
+            if (existingApp.getAppointmentID().equals(appointmentToEdit.getAppointmentID())) {
+                continue;
+            }
+            if (existingApp.getDoctor().getDoctorID().equals(newDoctorId) &&
+                existingApp.getAppointmentDate().equals(newDate) &&
+                existingApp.getAppointmentTime().equals(newTime) &&
+                !existingApp.getStatus().equals("Canceled")) {
+                return "Error: This time slot is already booked for the selected doctor.";
+            }
+        }
+
+        // --- Data Manipulation ---
+        Doctor newDoctor = findDoctorById(newDoctorId);
+        if (newDoctor == null) {
+            return "Error: System could not find the selected doctor.";
+        }
+
+        appointmentToEdit.setDoctor(newDoctor);
+        appointmentToEdit.setAppointmentDate(newDate);
+        appointmentToEdit.setAppointmentTime(newTime);
+
+        return "Success: Appointment " + appointmentToEdit.getAppointmentID() + " updated successfully!";
+    }
 }
