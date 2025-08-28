@@ -111,7 +111,7 @@ public class ReadWriteFile {
     }
 
     // --- READ Methods ---
-    public static void readPatientsFromFile(String filename, ListInterface<Patient> patientList) {
+    public void readPatientsFromFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -261,7 +261,7 @@ public class ReadWriteFile {
     }
 
     // --- WRITE Methods ---
-    public static void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
+    public void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             Iterator<Patient> it = patientList.getIterator();
             while (it.hasNext()) {

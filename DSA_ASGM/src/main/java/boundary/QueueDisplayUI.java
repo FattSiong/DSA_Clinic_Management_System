@@ -34,12 +34,8 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         lblQueueNo.setText("----");
         lblName.setText("Welcome");
         lblRoomNo.setText("Room --");
-
-        lblRoom1Status.setText("Available");
-        lblRoom2Status.setText("Available");
-        lblRoom4Status.setText("Available");
-        lblRoom3Status.setText("Available");
-
+        // Call with null for each room to show they are empty on startup
+        updateRoomStatusPanel(null, null, null, null);
         DefaultTableModel model = (DefaultTableModel) tblQueueList.getModel();
         model.setRowCount(0);
     }
@@ -58,15 +54,37 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         timer.start();
     }
 
-    public void updateAll(Queue calledPatient, int roomNumber, ListInterface<Queue> waitingList, Queue[] roomStatuses) {
+    /**
+     * Updates all components of the display with new data.
+     *
+     * @param calledPatient The patient just called.
+     * @param roomNumber The room they were called to.
+     * @param waitingList The list of patients still waiting.
+     * @param roomStatuses An array where the index is the room number and the
+     * value is the Queue object of the patient being served.
+     * @param scheduleStatuses An array with the schedule status (e.g., "On
+     * Leave").
+     */
+    public void updateAll(
+            Queue calledPatient, int roomNumber, ListInterface<Queue> waitingList,
+            Queue room1Patient,
+            Queue room2Patient,
+            Queue room3Patient,
+            Queue room4Patient
+    ) {
         updateMainDisplay(calledPatient, roomNumber);
         updateWaitingTable(waitingList);
-        updateRoomStatusPanel(roomStatuses);
+        updateRoomStatusPanel(
+                room1Patient,
+                room2Patient,
+                room3Patient,
+                room4Patient
+        );
     }
 
     public void updateMainDisplay(Queue calledPatient, int roomNumber) {
         if (calledPatient != null) {
-            lblQueueNo.setText(String.format("%04d", calledPatient.getQueueNumber()));
+            lblQueueNo.setText(String.format("%04d", calledPatient.getQueueId()));
             lblName.setText(calledPatient.getPatient().getName());
             lblRoomNo.setText("Room " + roomNumber);
         }
@@ -81,7 +99,7 @@ public class QueueDisplayUI extends javax.swing.JFrame {
             while (iterator.hasNext()) {
                 Queue queueItem = iterator.next();
                 Object[] rowData = {
-                    String.format("%04d", queueItem.getQueueNumber()),
+                    String.format("%04d", queueItem.getQueueId()),
                     queueItem.getPatient().getName()
                 };
                 model.addRow(rowData);
@@ -89,15 +107,38 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         }
     }
 
-    private void updateRoomStatusPanel(Queue[] roomStatuses) {
-        javax.swing.JLabel[] statusLabels = {null, lblRoom1Status, lblRoom2Status, lblRoom4Status, lblRoom3Status};
+    private void updateRoomStatusPanel(
+            Queue room1Patient,
+            Queue room2Patient,
+            Queue room3Patient,
+            Queue room4Patient
+    ) {
+        // Room 1
+        if (room1Patient != null) {
+            lblRoom1Status.setText("Serving: " + String.format("%04d", room1Patient.getQueueNumber()));
+        } else {
+            lblRoom1Status.setText("----");
+        }
 
-        for (int i = 1; i < statusLabels.length; i++) {
-            if (roomStatuses[i] != null) {
-                statusLabels[i].setText("Serving: " + String.format("%04d", roomStatuses[i].getQueueNumber()));
-            } else {
-                statusLabels[i].setText("Available");
-            }
+        // Room 2
+        if (room2Patient != null) {
+            lblRoom2Status.setText("Serving: " + String.format("%04d", room2Patient.getQueueNumber()));
+        } else {
+            lblRoom2Status.setText("----");
+        }
+
+        // Room 3
+        if (room3Patient != null) {
+            lblRoom3Status.setText("Serving: " + String.format("%04d", room3Patient.getQueueNumber()));
+        } else {
+            lblRoom3Status.setText("----");
+        }
+
+        // Room 4
+        if (room4Patient != null) {
+            lblRoom4Status.setText("Serving: " + String.format("%04d", room4Patient.getQueueNumber()));
+        } else {
+            lblRoom4Status.setText("----");
         }
     }
 

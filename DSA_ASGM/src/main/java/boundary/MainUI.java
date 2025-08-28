@@ -16,6 +16,7 @@ import entity.Schedule;
 import entity.Consultation;
 import entity.Treatment;
 import entity.Appointment;
+import entity.Queue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -26,6 +27,7 @@ import java.awt.event.ActionListener;
 public class MainUI extends JFrame {
 
     private ListInterface<Patient> patientList;
+    private ListInterface<Queue> queueList;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Medicine> medicineList;
     private ListInterface<Schedule> scheduleList;
@@ -34,12 +36,13 @@ public class MainUI extends JFrame {
     private ListInterface<Treatment> treatmentList;
 
     public MainUI(
-            ListInterface<Patient> patientList, ListInterface<Doctor> doctorList,
+            ListInterface<Patient> patientList, ListInterface<Queue> queueList, ListInterface<Doctor> doctorList,
             ListInterface<Medicine> medicineList, ListInterface<Schedule> scheduleList,
             ListInterface<Appointment> appointmentList, ListInterface<Consultation> consultationList,
             ListInterface<Treatment> treatmentList) {
 
         this.patientList = patientList;
+        this.queueList = queueList;
         this.doctorList = doctorList;
         this.medicineList = medicineList;
         this.scheduleList = scheduleList;

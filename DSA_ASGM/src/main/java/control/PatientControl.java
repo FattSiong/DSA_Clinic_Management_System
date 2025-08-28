@@ -16,12 +16,15 @@ import utility.ReadWriteFile;
  */
 public class PatientControl {
 
-    private ListInterface<Patient> patientList;
     private static final String PATIENT_FILE = "src/main/java/Data File/patients";
+
+    private ListInterface<Patient> patientList;
+    private ReadWriteFile fileManager;
 
     public PatientControl() {
         this.patientList = new DoublyLinkedList<>();
-        ReadWriteFile.readPatientsFromFile(PATIENT_FILE, this.patientList);
+        this.fileManager = new ReadWriteFile();
+        fileManager.readPatientsFromFile(PATIENT_FILE, this.patientList);
     }
 
     public ListInterface<Patient> getPatientList() {
@@ -44,7 +47,7 @@ public class PatientControl {
             return false;
         } else {
             patientList.add(newPatient);
-            ReadWriteFile.writePatientsToFile(PATIENT_FILE, this.patientList);
+            fileManager.writePatientsToFile(PATIENT_FILE, this.patientList);
             return true;
         }
     }
@@ -53,21 +56,21 @@ public class PatientControl {
         for (int i = 1; i <= patientList.getLength(); i++) {
             if (patientList.getEntry(i).getPatientID().equals(updatedPatient.getPatientID())) {
                 patientList.replace(i, updatedPatient);
-                ReadWriteFile.writePatientsToFile(PATIENT_FILE, this.patientList);
+                fileManager.writePatientsToFile(PATIENT_FILE, this.patientList);
                 return true;
             }
         }
         return false;
     }
-    
+
     public boolean deletePatient(String patientId) {
-    for (int i = 1; i <= patientList.getLength(); i++) {
-        if (patientList.getEntry(i).getPatientID().equals(patientId)) {
-            patientList.remove(i);
-            ReadWriteFile.writePatientsToFile(PATIENT_FILE, this.patientList);
-            return true; // Deletion successful
+        for (int i = 1; i <= patientList.getLength(); i++) {
+            if (patientList.getEntry(i).getPatientID().equals(patientId)) {
+                patientList.remove(i);
+                fileManager.writePatientsToFile(PATIENT_FILE, this.patientList);
+                return true; // Deletion successful
+            }
         }
+        return false; // Patient not found
     }
-    return false; // Patient not found
-}
 }

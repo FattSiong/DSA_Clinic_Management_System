@@ -6,8 +6,9 @@ package boundary;
 
 import entity.Queue;
 import control.QueueControl;
+import entity.Doctor;
+import javax.swing.JButton;
 import utility.ShowMessage;
-import javax.swing.JOptionPane;
 
 /**
  *
@@ -17,94 +18,110 @@ public class QueueControlUI extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(QueueControlUI.class.getName());
 
-    private QueueControl queueControl;
-    private QueueDisplayUI queueDisplayUI;
+    private final QueueControl queueControl;
+    private final QueueDisplayUI queueDisplayUI; // The public display screen
     private int selectedRoom = 0;
-    private final Queue[] lastCalledPatientPerRoom;
 
     /**
      * Creates new form QueueControlUI
      *
-     * @param queueControl
      */
     public QueueControlUI(QueueControl queueControl) {
         initComponents();
-
         this.queueControl = queueControl;
 
+        // Create and manage the public display UI from this control panel
         this.queueDisplayUI = new QueueDisplayUI();
         this.queueDisplayUI.setVisible(true);
 
-        this.lastCalledPatientPerRoom = new Queue[5];
+        this.queueControl.setOnQueueUpdateCallback(() -> refreshDisplay(null, 0));
 
-        setupInitialState();
         addNumberButtonListeners();
-        queueDisplayUI.updateAll(null, 0, queueControl.getPatientQueue(), lastCalledPatientPerRoom);
+        
+        this.addWindowListener(new java.awt.event.WindowAdapter() {
+        @Override
+        public void windowActivated(java.awt.event.WindowEvent e) {
+            System.out.println("Window Activated: Refreshing room statuses..."); // Optional line for debugging
+            updateRoomStatuses();
+        }
+    });
+
+        Queue lastCalledPatient = queueControl.findLastCalledPatient();
+        int roomNumber = 0;
+
+        // 2. If a patient was found, get their room number.
+        if (lastCalledPatient != null && lastCalledPatient.getDoctor() != null) {
+            String roomStr = lastCalledPatient.getDoctor().getRoomNumber(); // Gets "ROOM1", "ROOM2", etc.
+            try {
+                // Extract just the number from the string
+                roomNumber = Integer.parseInt(roomStr.replaceAll("[^0-9]", ""));
+            } catch (NumberFormatException e) {
+                roomNumber = 0; // Default to 0 if something goes wrong
+            }
+        }
+
+        // 3. Perform the initial refresh, displaying the last called patient if one was found.
+        refreshDisplay(lastCalledPatient, roomNumber);
     }
 
-    private void setupInitialState() {
-        lblRoom1Status.setText("Available");
-        lblRoom2Status.setText("Available");
-        lblRoom3Status.setText("Available");
-        lblRoom4Status.setText("Available");
+    /**
+     * Updates the status labels and enables/disables room buttons based on
+     * availability.
+     */
+    private void updateRoomStatuses() {
+        JButton[] roomButtons = {null, btnRoom1, btnRoom2, btnRoom3, btnRoom4};
+        javax.swing.JLabel[] statusLabels = {null, lblRoom1Status, lblRoom2Status, lblRoom3Status, lblRoom4Status};
+
+        for (int i = 1; i <= 4; i++) {
+            // --- KEY CHANGE HERE ---
+            // Call the new method that uses the fixed room-to-doctor logic
+            String status = queueControl.getRoomStatusForToday(i);
+
+            // Update the status label (e.g., "Available", "Busy", "Unavailable")
+            statusLabels[i].setText(status);
+
+            // Enable the room button ONLY if the status is "Available"
+            roomButtons[i].setEnabled("Available".equals(status));
+        }
+    }
+
+    /**
+     * Refreshes the public queue display with the latest data.
+     */
+    private void refreshDisplay(Queue calledPatient, int roomNumber) {
+        // Get the patient being served in each room (will be null if the room is free)
+        Queue patient1 = queueControl.recallPatient(queueControl.findDoctorByRoomNumber("1"));
+        Queue patient2 = queueControl.recallPatient(queueControl.findDoctorByRoomNumber("2"));
+        Queue patient3 = queueControl.recallPatient(queueControl.findDoctorByRoomNumber("3"));
+        Queue patient4 = queueControl.recallPatient(queueControl.findDoctorByRoomNumber("4"));
+
+        // Call the updateAll method, passing along the newly called patient and room number
+        queueDisplayUI.updateAll(
+                calledPatient, // Pass the specific patient who was just called
+                roomNumber, // Pass the room they were called to
+                queueControl.getWaitingPatients(),
+                patient1,
+                patient2,
+                patient3,
+                patient4
+        );
+
+        // Also update this control panel's own status labels
+        updateRoomStatuses();
     }
 
     private void addNumberButtonListeners() {
-        btnNo1.addActionListener(e -> numberButtonPressed("1"));
-        btnNo2.addActionListener(e -> numberButtonPressed("2"));
-        btnNo3.addActionListener(e -> numberButtonPressed("3"));
-        btnNo4.addActionListener(e -> numberButtonPressed("4"));
-        btnNo5.addActionListener(e -> numberButtonPressed("5"));
-        btnNo6.addActionListener(e -> numberButtonPressed("6"));
-        btnNo7.addActionListener(e -> numberButtonPressed("7"));
-        btnNo8.addActionListener(e -> numberButtonPressed("8"));
-        btnNo9.addActionListener(e -> numberButtonPressed("9"));
-        btnNo0.addActionListener(e -> numberButtonPressed("0"));
-    }
-
-    private void numberButtonPressed(String number) {
-        ftfQueueNo.setText(ftfQueueNo.getText() + number);
-    }
-
-    private void processCall(Queue patient) {
-        int queueNum = patient.getQueueNumber();
-
-        updateRoomStatusLabel(selectedRoom, "Serving: " + String.format("%04d", queueNum));
-
-        lastCalledPatientPerRoom[selectedRoom] = patient;
-
-        queueDisplayUI.updateAll(
-                patient,
-                selectedRoom,
-                queueControl.getPatientQueue(),
-                this.lastCalledPatientPerRoom
-        );
-
-        ftfQueueNo.setText("");
-    }
-
-    private void updateRoomStatusLabel(int roomNumber, String status) {
-        switch (roomNumber) {
-            case 1 ->
-                lblRoom1Status.setText(status);
-            case 2 ->
-                lblRoom2Status.setText(status);
-            case 3 ->
-                lblRoom3Status.setText(status);
-            case 4 ->
-                lblRoom4Status.setText(status);
+        JButton[] numButtons = {btnNo0, btnNo1, btnNo2, btnNo3, btnNo4, btnNo5, btnNo6, btnNo7, btnNo8, btnNo9};
+        for (JButton btn : numButtons) {
+            btn.addActionListener(e -> {
+                ftfQueueNo.setText(ftfQueueNo.getText() + btn.getText());
+            });
         }
     }
 
-    public void refreshQueueDisplay() {
-        if (queueDisplayUI != null) {
-            queueDisplayUI.updateAll(
-                    null,
-                    0,
-                    queueControl.getPatientQueue(),
-                    this.lastCalledPatientPerRoom
-            );
-        }
+    private void selectRoom(int roomNumber) {
+        this.selectedRoom = roomNumber;
+        lblRoomNo.setText(String.valueOf(roomNumber));
     }
 
     /**
@@ -409,23 +426,19 @@ public class QueueControlUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnRoom1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRoom1ActionPerformed
-        selectedRoom = 1;
-        lblRoomNo.setText("1");
+        selectRoom(1);
     }//GEN-LAST:event_btnRoom1ActionPerformed
 
     private void btnRoom2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRoom2ActionPerformed
-        selectedRoom = 2;
-        lblRoomNo.setText("2");
+        selectRoom(2);
     }//GEN-LAST:event_btnRoom2ActionPerformed
 
     private void btnRoom3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRoom3ActionPerformed
-        selectedRoom = 3;
-        lblRoomNo.setText("3");
+        selectRoom(3);
     }//GEN-LAST:event_btnRoom3ActionPerformed
 
     private void btnRoom4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRoom4ActionPerformed
-        selectedRoom = 4;
-        lblRoomNo.setText("4");
+        selectRoom(4);
     }//GEN-LAST:event_btnRoom4ActionPerformed
 
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
@@ -439,27 +452,33 @@ public class QueueControlUI extends javax.swing.JFrame {
             ShowMessage.showError(this, "Please select a room first.");
             return;
         }
-
-        Queue nextPatient = queueControl.dequeueNextPatient();
-
-        if (nextPatient != null) {
-            processCall(nextPatient);
-        } else {
-            ShowMessage.showInfo(this, "The patient queue is empty.", "Queue Empty");
+        Doctor doc = queueControl.findDoctorByRoomNumber(String.valueOf(selectedRoom));
+        if (doc != null) {
+            Queue calledPatient = queueControl.callNextPatientInQueue(doc);
+            if (calledPatient != null) {
+                ShowMessage.showSuccess(this, "Calling next patient: " + calledPatient.getQueueNumber());
+                refreshDisplay(calledPatient, selectedRoom); // Pass the patient and room
+            } else {
+                ShowMessage.showInfo(this, "No patients are currently waiting.", "Queue Empty");
+            }
         }
     }//GEN-LAST:event_btnNextActionPerformed
 
     private void btnRecallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRecallActionPerformed
         if (selectedRoom == 0) {
-            ShowMessage.showError(this, "Please select a room first.");
+            ShowMessage.showError(this, "Please select a room to recall.");
             return;
         }
-
-        Queue patientToRecall = lastCalledPatientPerRoom[selectedRoom];
-        if (patientToRecall != null) {
-            queueDisplayUI.updateMainDisplay(patientToRecall, selectedRoom);
-        } else {
-            ShowMessage.showInfo(this, "No patient has been called to this room yet to recall.", "Info");
+        Doctor doc = queueControl.findDoctorByRoomNumber(String.valueOf(selectedRoom));
+        if (doc != null) {
+            Queue patientToRecall = queueControl.recallPatient(doc);
+            if (patientToRecall != null) {
+                ShowMessage.showInfo(this, "Recalling patient " + patientToRecall.getQueueId() + " to Room " + selectedRoom, "Recall");
+                // Here you would trigger the display update for the recall
+                queueDisplayUI.updateMainDisplay(patientToRecall, selectedRoom);
+            } else {
+                ShowMessage.showInfo(this, "No patient to recall for this room.", "Recall");
+            }
         }
     }//GEN-LAST:event_btnRecallActionPerformed
 
@@ -468,23 +487,24 @@ public class QueueControlUI extends javax.swing.JFrame {
             ShowMessage.showError(this, "Please select a room first.");
             return;
         }
-
-        String queueNoText = ftfQueueNo.getText();
-        if (queueNoText.isEmpty()) {
+        if (ftfQueueNo.getText().isEmpty()) {
             ShowMessage.showError(this, "Please enter a queue number to call.");
             return;
         }
 
         try {
-            int queueNumber = Integer.parseInt(queueNoText);
-            Queue specificPatient = queueControl.callSpecificPatient(queueNumber);
-
-            if (specificPatient != null) {
-                processCall(specificPatient);
-            } else {
-                ShowMessage.showWarning(this, "Patient with queue number " + queueNumber + " not found in the queue.");
+            int queueNumber = Integer.parseInt(ftfQueueNo.getText());
+            Doctor doc = queueControl.findDoctorByRoomNumber(String.valueOf(selectedRoom));
+            if (doc != null) {
+                Queue calledPatient = queueControl.callPatientByQueueNumber(queueNumber, doc);
+                if (calledPatient != null) {
+                    ShowMessage.showSuccess(this, "Calling patient: " + calledPatient.getQueueNumber());
+                    refreshDisplay(calledPatient, selectedRoom);
+                } else {
+                    ShowMessage.showError(this, "Queue number " + queueNumber + " not found or patient is not waiting.");
+                }
             }
-        } catch (NumberFormatException ex) {
+        } catch (NumberFormatException e) {
             ShowMessage.showError(this, "Invalid queue number format.");
         }
     }//GEN-LAST:event_btnCallActionPerformed
