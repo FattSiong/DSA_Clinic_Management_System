@@ -116,6 +116,7 @@ public class ScheduleControl extends JFrame {
             );
             scheduleList.add(s);
             loadSchedulesToTable();
+            JOptionPane.showMessageDialog(this, "Schedule added successfully!");
         }
     }
 
@@ -155,6 +156,7 @@ public class ScheduleControl extends JFrame {
                 s.setEndTime(LocalTime.parse(endField.getText()));
                 s.setAvailability(availField.getText());
                 loadSchedulesToTable();
+                JOptionPane.showMessageDialog(this, "Schedule update successfully!");
             }
         }
     }
@@ -174,5 +176,6 @@ public class ScheduleControl extends JFrame {
             }
         }
         loadSchedulesToTable();
+        JOptionPane.showMessageDialog(this, "Schedule delete successfully!");
     }
 }

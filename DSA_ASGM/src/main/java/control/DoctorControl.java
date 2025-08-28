@@ -12,6 +12,7 @@ public class DoctorControl extends JFrame {
     private ListInterface<Doctor> doctorList;
     private DefaultTableModel doctorTableModel;
     private JTable doctorTable;
+    private JButton btnAdd; // Keep reference for enabling/disabling
 
     public DoctorControl(DoctorUI parentUI, ListInterface<Doctor> doctorList) {
         this.parentUI = parentUI;
@@ -24,6 +25,7 @@ public class DoctorControl extends JFrame {
 
         initComponents();
         loadDoctorsToTable();
+        checkAddButtonStatus(); // Ensure correct button status on start
     }
 
     private void initComponents() {
@@ -36,7 +38,7 @@ public class DoctorControl extends JFrame {
 
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton btnAdd = new JButton("Add");
+        btnAdd = new JButton("Add");  // assign to class-level
         JButton btnUpdate = new JButton("Update");
         JButton btnDelete = new JButton("Delete");
         JButton btnBack = new JButton("Back");
@@ -66,62 +68,93 @@ public class DoctorControl extends JFrame {
     }
 
     private void addDoctor() {
-        JTextField idField = new JTextField();
-        JTextField nameField = new JTextField();
-        JTextField contactField = new JTextField();
-        JTextField roomField = new JTextField();
+    if (doctorList.getLength() >= 4) {
+        JOptionPane.showMessageDialog(this, "Maximum of 4 doctors allowed!");
+        return;
+    }
+
+    JTextField idField = new JTextField();
+    JTextField nameField = new JTextField();
+    JTextField contactField = new JTextField();
+    JTextField roomField = new JTextField();
+
+    Object[] fields = {
+        "ID:", idField,
+        "Name:", nameField,
+        "Contact:", contactField,
+        "Room:", roomField
+    };
+
+    int option = JOptionPane.showConfirmDialog(this, fields, "Add Doctor", JOptionPane.OK_CANCEL_OPTION);
+    if (option == JOptionPane.OK_OPTION) {
+        String id = idField.getText().trim();
+        String name = nameField.getText().trim();
+        String contact = contactField.getText().trim();
+        String room = roomField.getText().trim();
+
+        // Validation: Check if any field is empty
+        if (id.isEmpty() || name.isEmpty() || contact.isEmpty() || room.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "All fields must be filled in!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        Doctor d = new Doctor(id, name, contact, room);
+        doctorList.add(d);
+        loadDoctorsToTable();
+        JOptionPane.showMessageDialog(this, "Doctor added successfully!");
+        checkAddButtonStatus();
+    }
+}
+
+
+    private void updateDoctor() {
+    int row = doctorTable.getSelectedRow();
+    if (row == -1) {
+        JOptionPane.showMessageDialog(this, "Select a doctor to update!");
+        return;
+    }
+
+    String id = (String) doctorTableModel.getValueAt(row, 0);
+    Doctor d = null;
+    for (int i = 1; i <= doctorList.getLength(); i++) {
+        if (doctorList.getEntry(i).getDoctorID().equals(id)) {
+            d = doctorList.getEntry(i);
+            break;
+        }
+    }
+
+    if (d != null) {
+        JTextField nameField = new JTextField(d.getName());
+        JTextField contactField = new JTextField(d.getContactNumber());
+        JTextField roomField = new JTextField(d.getRoomNumber());
 
         Object[] fields = {
-            "ID:", idField,
             "Name:", nameField,
             "Contact:", contactField,
             "Room:", roomField
         };
 
-        int option = JOptionPane.showConfirmDialog(this, fields, "Add Doctor", JOptionPane.OK_CANCEL_OPTION);
+        int option = JOptionPane.showConfirmDialog(this, fields, "Update Doctor", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
-            Doctor d = new Doctor(idField.getText(), nameField.getText(), contactField.getText(), roomField.getText());
-            doctorList.add(d);
+            String name = nameField.getText().trim();
+            String contact = contactField.getText().trim();
+            String room = roomField.getText().trim();
+
+            // Validation: Check if any field is empty
+            if (name.isEmpty() || contact.isEmpty() || room.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "All fields must be filled in!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            d.setName(name);
+            d.setContactNumber(contact);
+            d.setRoomNumber(room);
             loadDoctorsToTable();
+            JOptionPane.showMessageDialog(this, "Doctor updated successfully!");
         }
     }
+}
 
-    private void updateDoctor() {
-        int row = doctorTable.getSelectedRow();
-        if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Select a doctor to update!");
-            return;
-        }
-
-        String id = (String) doctorTableModel.getValueAt(row, 0);
-        Doctor d = null;
-        for (int i = 1; i <= doctorList.getLength(); i++) {
-            if (doctorList.getEntry(i).getDoctorID().equals(id)) {
-                d = doctorList.getEntry(i);
-                break;
-            }
-        }
-
-        if (d != null) {
-            JTextField nameField = new JTextField(d.getName());
-            JTextField contactField = new JTextField(d.getContactNumber());
-            JTextField roomField = new JTextField(d.getRoomNumber());
-
-            Object[] fields = {
-                "Name:", nameField,
-                "Contact:", contactField,
-                "Room:", roomField
-            };
-
-            int option = JOptionPane.showConfirmDialog(this, fields, "Update Doctor", JOptionPane.OK_CANCEL_OPTION);
-            if (option == JOptionPane.OK_OPTION) {
-                d.setName(nameField.getText());
-                d.setContactNumber(contactField.getText());
-                d.setRoomNumber(roomField.getText());
-                loadDoctorsToTable();
-            }
-        }
-    }
 
     private void deleteDoctor() {
         int row = doctorTable.getSelectedRow();
@@ -134,9 +167,19 @@ public class DoctorControl extends JFrame {
         for (int i = 1; i <= doctorList.getLength(); i++) {
             if (doctorList.getEntry(i).getDoctorID().equals(id)) {
                 doctorList.remove(i);
+                JOptionPane.showMessageDialog(this, "Doctor deleted successfully!");
                 break;
             }
         }
         loadDoctorsToTable();
+        checkAddButtonStatus();
+    }
+
+    private void checkAddButtonStatus() {
+        if (doctorList.getLength() >= 4) {
+            btnAdd.setEnabled(false);
+        } else {
+            btnAdd.setEnabled(true);
+        }
     }
 }
