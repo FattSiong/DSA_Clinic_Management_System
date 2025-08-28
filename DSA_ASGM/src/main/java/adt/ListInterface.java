@@ -128,5 +128,13 @@ import java.util.Comparator;
      */
     public void sort(Comparator<T> comparator);
     
+    /**
+     * Sorts the elements in the list in descending order according to the order
+     * induced by the specified Comparator.
+     *
+     * @param comparator The Comparator used to determine the order of the list.
+     */
+    public void sortDescending(Comparator<T> comparator);
+    
     
 }
