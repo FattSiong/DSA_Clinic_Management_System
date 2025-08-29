@@ -46,6 +46,11 @@ public class QueueControl {
 
         initializeQueue();
     }
+    
+    public QueueControl(ListInterface<Queue> qList) {
+        this.queueList = qList;
+        this.fileManager = new ReadWriteFile();
+    }
 
     private void loadInitialData() {
         PatientControl patientControl = new PatientControl();
@@ -311,7 +316,7 @@ public class QueueControl {
             return false;
         }
         
-        Iterator<Queue> it = patientQueue.getIterator();
+        Iterator<Queue> it = queueList.getIterator();
         while (it.hasNext()) {
             Queue queueEntry = it.next();
             // Check if a queue entry is assigned to this doctor and is currently active
@@ -331,7 +336,7 @@ public class QueueControl {
      */
     public ListInterface<Queue> getInConsultationQueue() {
         ListInterface<Queue> inConsultationList = new DoublyLinkedList<>();
-        Iterator<Queue> it = patientQueue.getIterator();
+        Iterator<Queue> it = queueList.getIterator();
         while (it.hasNext()) {
             Queue queueEntry = it.next();
             if (queueEntry.getStatus().equals("In Consultation")) {
@@ -346,6 +351,6 @@ public class QueueControl {
      * This method is called by the UI after a consultation is saved.
      */
     public void updateQueueFile() {
-        fileManager.writeQueuesToFile("src/main/java/Data File/queues", patientQueue);
+        fileManager.writeQueuesToFile("src/main/java/Data File/queues", queueList);
     }
 }
