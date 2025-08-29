@@ -59,8 +59,8 @@ public class ClinicManagementSystem {
             public void run() {
                 // Pass all the loaded data to the MainUI
                 new MainUI(
-                        patientList, doctorList, medicineList, scheduleList,
-                        appointmentList, consultationList, treatmentList, queueList
+                        patientList, queueList, doctorList, medicineList, scheduleList,
+                        appointmentList, consultationList, treatmentList
                 ).setVisible(true);
             }
         });

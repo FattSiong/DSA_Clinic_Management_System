@@ -20,6 +20,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Iterator;
@@ -112,7 +113,7 @@ public class ReadWriteFile {
     }
 
     // --- READ Methods ---
-    public static void readPatientsFromFile(String filename, ListInterface<Patient> patientList) {
+    public void readPatientsFromFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -135,8 +136,8 @@ public class ReadWriteFile {
                 int queueNumber = Integer.parseInt(data[1]);
                 Patient patient = findPatientById(patientList, data[2]);
                 Doctor doctor = data[3].equals("N/A") ? null : findDoctorById(doctorList, data[3]);
-                LocalTime entryTime = LocalTime.parse(data[4]);
-                LocalTime exitTime = data[5].equals("N/A") ? null : LocalTime.parse(data[4]);
+                LocalDateTime entryTime = LocalDateTime.parse(data[4]);
+                LocalDateTime exitTime = data[5].equals("N/A") ? null : LocalDateTime.parse(data[5]);
                 String status = data[6];
 
                 if (patient != null) {
@@ -272,7 +273,7 @@ public class ReadWriteFile {
     }
 
     // --- WRITE Methods ---
-    public static void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
+    public void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             Iterator<Patient> it = patientList.getIterator();
             while (it.hasNext()) {

@@ -7,9 +7,12 @@ package boundary;
 import adt.ListInterface;
 import java.util.Iterator;
 import entity.Queue;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.swing.JPanel;
 import javax.swing.Timer;
 import javax.swing.table.DefaultTableModel;
 
@@ -34,12 +37,7 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         lblQueueNo.setText("----");
         lblName.setText("Welcome");
         lblRoomNo.setText("Room --");
-
-        lblRoom1Status.setText("Available");
-        lblRoom2Status.setText("Available");
-        lblRoom4Status.setText("Available");
-        lblRoom3Status.setText("Available");
-
+        updateRoomStatusPanel(null, null, null, null);
         DefaultTableModel model = (DefaultTableModel) tblQueueList.getModel();
         model.setRowCount(0);
     }
@@ -58,17 +56,40 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         timer.start();
     }
 
-    public void updateAll(Queue calledPatient, int roomNumber, ListInterface<Queue> waitingList, Queue[] roomStatuses) {
+    /**
+     * Updates all components of the display with new data.
+     *
+     * @param calledPatient The patient just called.
+     * @param roomNumber The room they were called to.
+     * @param waitingList The list of patients still waiting.
+     * @param room1Patient
+     * @param room2Patient
+     * @param room3Patient
+     * @param room4Patient
+     */
+    public void updateAll(
+            Queue calledPatient, int roomNumber, ListInterface<Queue> waitingList,
+            Queue room1Patient,
+            Queue room2Patient,
+            Queue room3Patient,
+            Queue room4Patient
+    ) {
         updateMainDisplay(calledPatient, roomNumber);
         updateWaitingTable(waitingList);
-        updateRoomStatusPanel(roomStatuses);
+        updateRoomStatusPanel(
+                room1Patient,
+                room2Patient,
+                room3Patient,
+                room4Patient
+        );
     }
 
     public void updateMainDisplay(Queue calledPatient, int roomNumber) {
         if (calledPatient != null) {
-            lblQueueNo.setText(String.format("%04d", calledPatient.getQueueNumber()));
+            lblQueueNo.setText(String.format("%04d", calledPatient.getQueueId()));
             lblName.setText(calledPatient.getPatient().getName());
             lblRoomNo.setText("Room " + roomNumber);
+            blinkPanel(pnlCurrentQueue);
         }
     }
 
@@ -81,7 +102,7 @@ public class QueueDisplayUI extends javax.swing.JFrame {
             while (iterator.hasNext()) {
                 Queue queueItem = iterator.next();
                 Object[] rowData = {
-                    String.format("%04d", queueItem.getQueueNumber()),
+                    String.format("%04d", queueItem.getQueueId()),
                     queueItem.getPatient().getName()
                 };
                 model.addRow(rowData);
@@ -89,16 +110,69 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         }
     }
 
-    private void updateRoomStatusPanel(Queue[] roomStatuses) {
-        javax.swing.JLabel[] statusLabels = {null, lblRoom1Status, lblRoom2Status, lblRoom4Status, lblRoom3Status};
-
-        for (int i = 1; i < statusLabels.length; i++) {
-            if (roomStatuses[i] != null) {
-                statusLabels[i].setText("Serving: " + String.format("%04d", roomStatuses[i].getQueueNumber()));
-            } else {
-                statusLabels[i].setText("Available");
-            }
+    private void updateRoomStatusPanel(
+            Queue room1Patient,
+            Queue room2Patient,
+            Queue room3Patient,
+            Queue room4Patient
+    ) {
+        // Room 1
+        if (room1Patient != null) {
+            lblRoom1Status.setText("Serving: " + String.format("%04d", room1Patient.getQueueNumber()));
+        } else {
+            lblRoom1Status.setText("----");
         }
+
+        // Room 2
+        if (room2Patient != null) {
+            lblRoom2Status.setText("Serving: " + String.format("%04d", room2Patient.getQueueNumber()));
+        } else {
+            lblRoom2Status.setText("----");
+        }
+
+        // Room 3
+        if (room3Patient != null) {
+            lblRoom3Status.setText("Serving: " + String.format("%04d", room3Patient.getQueueNumber()));
+        } else {
+            lblRoom3Status.setText("----");
+        }
+
+        // Room 4
+        if (room4Patient != null) {
+            lblRoom4Status.setText("Serving: " + String.format("%04d", room4Patient.getQueueNumber()));
+        } else {
+            lblRoom4Status.setText("----");
+        }
+    }
+
+    /**
+     * Makes a panel blink 3 times to draw attention.
+     *
+     * @param panel The JPanel to animate.
+     */
+    private void blinkPanel(JPanel panel) {
+        Color originalColor = panel.getBackground();
+        Color blinkColor = Color.CYAN;
+
+        AtomicInteger blinkCount = new AtomicInteger(0);
+
+        Timer timer = new Timer(250, null);
+        timer.addActionListener(e -> {
+            if (blinkCount.get() >= 6) {
+                panel.setBackground(originalColor);
+                timer.stop();
+                return;
+            }
+
+            if (panel.getBackground().equals(originalColor)) {
+                panel.setBackground(blinkColor);
+            } else {
+                panel.setBackground(originalColor);
+            }
+
+            blinkCount.incrementAndGet();
+        });
+        timer.start();
     }
 
     /**

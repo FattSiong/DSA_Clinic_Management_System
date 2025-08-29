@@ -4,7 +4,8 @@
  */
 package entity;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  *
@@ -16,8 +17,8 @@ public class Queue implements Comparable<Queue> {
     private int queueNumber;
     private Patient patient; // Link to the patient
     private Doctor doctor;
-    private LocalTime entryTime;
-    private LocalTime exitTime;
+    private LocalDateTime entryTime;
+    private LocalDateTime exitTime;
     private String status; // e.g., "Waiting", "In Consultation", "Completed"
 
     /**
@@ -29,7 +30,7 @@ public class Queue implements Comparable<Queue> {
         this.queueId = queueId;
         this.patient = patient;
         this.doctor = null;
-        this.entryTime = LocalTime.now();
+        this.entryTime = LocalDateTime.now();
         this.exitTime = null;
         this.status = "Waiting";
     }
@@ -44,7 +45,7 @@ public class Queue implements Comparable<Queue> {
      * @param exitTime
      * @param status
      */
-    public Queue(int queueId, int queueNumber, Patient patient, Doctor doctor, LocalTime entryTime, LocalTime exitTime, String status) {
+    public Queue(int queueId, int queueNumber, Patient patient, Doctor doctor, LocalDateTime entryTime, LocalDateTime exitTime, String status) {
     this.queueId = queueId;
     this.queueNumber = queueNumber;
     this.patient = patient;
@@ -71,11 +72,11 @@ public class Queue implements Comparable<Queue> {
         return doctor;
     }
 
-    public LocalTime getEntryTime() {
+    public LocalDateTime getEntryTime() {
         return entryTime;
     }
 
-    public LocalTime getExitTime() {
+    public LocalDateTime getExitTime() {
         return exitTime;
     }
 
@@ -100,11 +101,11 @@ public class Queue implements Comparable<Queue> {
         this.doctor = doctor;
     }
 
-    public void setEntryTime(LocalTime entryTime) {
+    public void setEntryTime(LocalDateTime entryTime) {
         this.entryTime = entryTime;
     }
 
-    public void setExitTime(LocalTime exitTime) {
+    public void setExitTime(LocalDateTime exitTime) {
         this.exitTime = exitTime;
     }
 
@@ -115,6 +116,19 @@ public class Queue implements Comparable<Queue> {
     @Override
     public int compareTo(Queue other) {
         return Integer.compare(this.queueId, other.getQueueId());
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final Queue other = (Queue) obj;
+
+        return Objects.equals(this.queueId, other.queueId);
     }
 
     @Override

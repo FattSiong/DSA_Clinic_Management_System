@@ -1,7 +1,40 @@
-P1001|Lee Wei|Male|32|010101-14-4321|012-34567891|lee.wei@student.tarumt.edu.my|None
-P1002|Siti Nurhaliza|Male|32|020202-10-5678|019-87654323|siti.n@student.tarumt.edu.my|Asthma<br>Can't breath
-P1003|Rajesh Kumar|Male|32|001212-08-9101|016-12345671|raj.k@student.tarumt.edu.my|Penicillin Allergy
-P1005|Char Siew BB|Male|99|333333-33-3333|222-22222222|bb@gmail.com|das<br>dasd<br>cannot breath
-P1006|HAAA|Female|12|000000-00-0000|000-00000000|gmail@gmail.com|No
-P1007|Fatt Fatt BB|Female|18|312312-31-2312|312-31231231|18yearsold@gmail.com|I am 18 years old!!!
-P1008|Siu Fatt BB|Male|45|312312-31-2323|321-32312312|45yearsold@gmail.com|blablabla
+P1001|Lim Wei Jie|Male|28|970315-14-5561|012-3456789|weijie.lim@email.com|Allergy to penicillin
+P1002|Ramesh Kumar|Male|62|630505-08-5111|016-2345678|ramesh.k@email.com|Diabetes Type 2
+P1003|Siti Nurhaliza|Female|28|801120-10-5432|019-8765432|siti.n@email.com|High blood pressure
+P1004|Tan Mei Ling|Female|19|060830-14-5882|017-9876543|meiling.tan@email.com|Asthma
+P1005|David Chen|Male|35|900101-01-5223|011-1234567|david.chen@email.com|None
+P1006|Aisha Binti Abdullah|Female|55|700214-05-5334|013-4567890|aisha.a@email.com|Arthritis
+P1007|Johnathan Wong|Male|8|170912-10-5991|012-2223333|N/A|Eczema
+P1008|Fatima Al-Zahra|Female|31|940722-07-5668|018-8889999|fatima.az@email.com|Migraines
+P1009|Kevin Raj|Male|22|030418-14-5775|014-4445555|kevin.raj@email.com|G6PD deficiency
+P1010|Chloe Lim|Female|29|961203-10-5112|012-7778888|chloe.l@email.com|None
+P1011|Amir Bin Hamzah|Male|71|540609-02-5333|019-1112222|amir.h@email.com|Heart condition
+P1012|Brenda Lee|Female|42|830125-14-5446|016-6667777|brenda.lee@email.com|Gastritis
+P1013|Zainal Abidin|Male|58|670303-03-5889|017-3334444|zainal.a@email.com|High cholesterol
+P1014|Priya Krishnan|Female|12|131010-10-5220|011-9990000||Allergy to nuts
+P1015|Jason Tan|Male|48|770520-14-5991|012-5551111|jason.tan@email.com|Back pain
+P1016|Emily Yeoh|Female|33|920808-08-5888|016-9871234|emily.y@email.com|None
+P1017|Adam Yusof|Male|25|001111-11-5111|019-2349876|adam.y@email.com|Sports injury (knee)
+P1018|Samantha Low|Female|65|600404-10-5444|012-8764321|samantha.l@email.com|Osteoporosis
+P1019|Daniel Ariff|Male|16|090719-14-5333|017-6547890|daniel.a@email.com|Acne
+P1020|Hannah Chin|Female|5|200325-10-5666|011-2345123|hannah.c@email.com|Frequent colds
+P1021|Mohd Farid bin Razak|Male|41|840210-01-5123|012-1122334|farid.razak@email.com|Hypertension
+P1022|Alicia Wong Sze Min|Female|21|040522-14-5884|016-3344555|alicia.wong@email.com|Acne
+P1023|Ganesan A/L Muthu|Male|53|721105-08-5445|019-5566778|ganesan.m@email.com|Gastric issues
+P1024|Nurul Hidayah|Female|32|930919-05-5112|017-7788990|nurul.h@email.com|Pregnancy check-up
+P1025|Robert Williams|Male|68|570101-16-5331|011-2345678|rob.williams@email.com|Gout
+P1026|Lee Kok Seng|Male|75|501230-10-5999|012-9876543|kok.seng@email.com|Glaucoma
+P1027|Deepa A/P Suresh|Female|11|140615-14-5124|016-8765432||Chickenpox
+P1028|Aiman Hakim|Male|23|020303-03-5333|018-7654321|aiman.h@email.com|Eczema
+P1029|Chan Yoke Lin|Female|51|740825-10-5882|012-6543210|yokelin.chan@email.com|Menopause symptoms
+P1030|Vikram Nair|Male|38|870411-14-5777|019-5432109|vikram.nair@email.com|None
+P1031|Fatimah binti Idris|Female|66|590707-07-5668|013-4321098|fatimah.i@email.com|Osteoarthritis
+P1032|Sarah Jenkins|Female|29|961013-16-5114|011-3210987|sarah.j@email.com|Allergy to shellfish
+P1033|Goh Wei Xiang|Male|9|160228-10-5993|012-2109876||Fractured arm
+P1034|Anjali Kumar|Female|44|810606-08-5448|016-1098765|anjali.k@email.com|Anemia
+P1035|Iskandar Zulkarnain|Male|30|950505-05-5335|017-0987654|iskandar.z@email.com|Sinusitis
+P1036|Yeo Xin Yi|Female|26|990120-14-5886|012-9876543|xinyi.yeo@email.com|Migraines
+P1037|Prakash Rao|Male|78|471111-10-5997|019-8765432|prakash.rao@email.com|Parkinson's
+P1038|Siti Aisyah|Female|6|190418-14-5338|011-7654321||Fever and cough
+P1039|Lim Boon Keat|Male|59|660909-08-5449|016-6543210|boonkeat.lim@email.com|High cholesterol
+P1040|Shanti A/P Ramasamy|Female|36|890321-10-5110|012-5432109|shanti.r@email.com|None
