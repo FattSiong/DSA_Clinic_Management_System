@@ -7,6 +7,7 @@ package adt;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Comparator;
+import java.util.function.Predicate; 
 
 /**
  *
@@ -190,6 +191,23 @@ public class DoublyLinkedList<T extends Comparable<T>> implements ListInterface<
         return -1;
     }
 
+    /**
+     * The search algorithm. It traverses the list and returns the first element
+     * that satisfies the provided condition.
+     * @param condition The search condition to apply.
+     * @return The found element, or null.
+     */
+    public T find(Predicate<T> condition) {
+        Iterator<T> it = getIterator();
+        while (it.hasNext()) {
+            T currentItem = it.next();
+            if (condition.test(currentItem)) {
+                return currentItem; // Found a match
+            }
+        }
+        return null; // No match found
+    }
+    
     /**
      * Sorts the list using the insertion sort algorithm. This implementation is
      * suitable for a linked list as it works by re-linking nodes.

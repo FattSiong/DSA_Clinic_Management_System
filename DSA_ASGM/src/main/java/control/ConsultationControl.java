@@ -5,9 +5,12 @@
 package control;
 
 import adt.ListInterface;
+import adt.DoublyLinkedList;
 import entity.Appointment;
 import entity.Consultation;
 import java.time.LocalDate;
+import java.util.Iterator;
+import utility.ReadWriteFile;
 
 /**
  *
@@ -17,10 +20,13 @@ public class ConsultationControl {
 
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
+    private ReadWriteFile fileManager;
 
-    public ConsultationControl(ListInterface<Appointment> appList, ListInterface<Consultation> conList) {
+    public ConsultationControl(ListInterface<Appointment> appList, ListInterface<Consultation> conList, ReadWriteFile fileManager) {
         this.appointmentList = appList;
         this.consultationList = conList;
+        this.fileManager = fileManager;
+
     }
 
     // --- Getter Functions ---
@@ -33,22 +39,21 @@ public class ConsultationControl {
     }
 
     /**
-     * Handles the logic for canceling an appointment.
+     * Handles the logic for editing an existing consultation's diagnosis.
      *
-     * @param appointment The appointment to cancel.
+     * @param consultationToEdit The consultation object to modify.
+     * @param newDiagnosis The new diagnosis text.
      * @return A String indicating the result.
      */
-    public String cancelAppointment(Appointment appointment) {
-        if (appointment == null) {
-            return "Error: No appointment selected.";
-        }
-        if (!appointment.getStatus().equals("Scheduled")) {
-            return "Error: Only 'Scheduled' appointments can be canceled.";
+    public String editConsultationDiagnosis(Consultation consultationToEdit, String newDiagnosis) {
+        if (newDiagnosis == null || newDiagnosis.trim().isEmpty()) {
+            return "Error: Diagnosis cannot be empty.";
         }
 
-        appointment.setStatus("Canceled");
-        // The list is updated directly since 'appointment' is a reference to the object in the list.
-        return "Success: Appointment " + appointment.getAppointmentID() + " has been canceled.";
+        // Update the diagnosis in the object
+        consultationToEdit.setDiagnosis(newDiagnosis);
+
+        return "Success: Diagnosis for " + consultationToEdit.getConsultationID() + " updated successfully!";
     }
 
     /**
@@ -71,11 +76,17 @@ public class ConsultationControl {
 
         // 2. Update appointment status
         appointment.setStatus("Completed");
+        appointmentList.sort();
+        consultationList.sort();
+        fileManager.writeConsultationsToFile("src/main/java/Data File/consultations", consultationList); // Assuming getter in control
+        fileManager.writeAppointmentsToFile("src/main/java/Data File/appointments", appointmentList); // Assuming getter in control
 
         return "Success: Consultation " + newId + " saved successfully!";
     }
 
     private String generateNewConsultationId() {
+        consultationList.sort();
+
         if (consultationList.isEmpty()) {
             return "C1001";
         }
@@ -83,14 +94,46 @@ public class ConsultationControl {
         int lastIdNum = Integer.parseInt(last.getConsultationID().substring(1));
         return "C" + (lastIdNum + 1);
     }
-    
+
     public String deleteConsultation(String consultationId) {
         for (int i = 1; i <= consultationList.getLength(); i++) {
             if (consultationList.getEntry(i).getConsultationID().equals(consultationId)) {
                 consultationList.remove(i);
+                consultationList.sort();
                 return "Success: Consultation " + consultationId + " has been deleted.";
             }
         }
         return "Error: Consultation not found.";
+    }
+
+    public ListInterface<Consultation> filterConsultations(String searchText, String searchBy) {
+        ListInterface<Consultation> filteredList = new DoublyLinkedList<>();
+        Iterator<Consultation> it = consultationList.getIterator();
+
+        while (it.hasNext()) {
+            Consultation con = it.next();
+            boolean matchesSearch = true;
+
+            if (searchText != null && !searchText.trim().isEmpty()) {
+                String lowerSearchText = searchText.toLowerCase();
+                matchesSearch = switch (searchBy) {
+                    case "ID" ->
+                        con.getConsultationID().toLowerCase().contains(lowerSearchText);
+                    case "Patient Name" ->
+                        con.getPatient().getName().toLowerCase().contains(lowerSearchText);
+                    case "Doctor Name" ->
+                        con.getDoctor().getName().toLowerCase().contains(lowerSearchText);
+                    case "Diagnosis" ->
+                        con.getDiagnosis().toLowerCase().contains(lowerSearchText);
+                    default ->
+                        true;
+                };
+            }
+
+            if (matchesSearch) {
+                filteredList.add(con);
+            }
+        }
+        return filteredList;
     }
 }

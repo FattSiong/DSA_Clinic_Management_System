@@ -14,18 +14,22 @@ import entity.Doctor;
 import entity.Patient;
 import utility.AppointmentComparators;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Iterator;
+import javax.swing.table.TableCellRenderer;
+import boundary.ConsultationUI;
 
 /**
  *
  * @author tiong
  */
 public class ManageAppointmentUI extends JFrame {
-
+    
+    private JFrame parentFrame;
     private JTable appointmentTable;
     private DefaultTableModel tableModel;
     private ListInterface<Appointment> fullAppointmentList;
@@ -34,6 +38,7 @@ public class ManageAppointmentUI extends JFrame {
     private ListInterface<Patient> patientList;
     private ReadWriteFile fileManager;
     private AppointmentControl appointmentControl;
+    private ConsultationUI parentUI;
 
     // UI Components for Search and Pagination
     private JTextField searchField = new JTextField(20);
@@ -46,13 +51,15 @@ public class ManageAppointmentUI extends JFrame {
     private int lastSortedColumn = -1;
     private boolean isAscending = true;
 
-    public ManageAppointmentUI(ListInterface<Appointment> appList, ListInterface<Patient> pList, ListInterface<Doctor> dList, ReadWriteFile manager) {
+    public ManageAppointmentUI(JFrame parentFrame, ConsultationUI parentUI, ListInterface<Appointment> appList, ListInterface<Patient> pList, ListInterface<Doctor> dList, ReadWriteFile fileManager) {
+        this.parentFrame = parentFrame;
+        this.parentUI = parentUI;
         this.fullAppointmentList = appList;
         this.filteredAppointmentList = appList;
-        this.fileManager = manager;
+        this.fileManager = fileManager;
         this.patientList = pList;
         this.doctorList = dList;
-        this.appointmentControl = new AppointmentControl(appList, pList, dList);
+        this.appointmentControl = new AppointmentControl(appList, pList, dList, fileManager);
 
         setTitle("Manage All Appointments");
         setSize(900, 700);
@@ -96,13 +103,15 @@ public class ManageAppointmentUI extends JFrame {
                 return false;
             }
         };
-        
         appointmentTable = new JTable(tableModel);
         appointmentTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         appointmentTable.setFont(new Font("Arial", Font.PLAIN, 14));
         appointmentTable.setRowHeight(30);
-        appointmentTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 14));
-        appointmentTable.getTableHeader().setBackground(new Color(230, 230, 230));
+        
+        JTableHeader header = appointmentTable.getTableHeader();
+        header.setFont(new Font("Arial", Font.BOLD, 14));
+        header.setBackground(new Color(230, 230, 230));
+        header.setDefaultRenderer(new SortableHeaderRenderer(header.getDefaultRenderer()));
         contentPanel.add(new JScrollPane(appointmentTable), BorderLayout.CENTER);
         
         appointmentTable.getTableHeader().addMouseListener(new MouseAdapter() {
@@ -145,18 +154,25 @@ public class ManageAppointmentUI extends JFrame {
         nextButton.addActionListener(e -> goToNextPage());
         btnEdit.addActionListener(e -> editSelectedAppointment());
         btnDelete.addActionListener(e -> deleteSelectedAppointment());
-        btnBack.addActionListener(e -> dispose());
+        btnBack.addActionListener(e -> {
+            parentFrame.setVisible(true);
+            parentUI.performSearch();
+            this.dispose();
+        });
 
         updateTable(); // Initial table load
     }
 
-    private void performSearch() {
+    public void performSearch() {
         String searchText = searchField.getText();
         String searchBy = (String) searchByComboBox.getSelectedItem();
         String filterStatus = (String) statusFilterComboBox.getSelectedItem();
 
         filteredAppointmentList = appointmentControl.filterAppointments(searchText, searchBy, filterStatus);
+        lastSortedColumn = -1;
+        isAscending = true;
         currentPage = 1;
+        
         updateTable();
     }
 
@@ -198,29 +214,6 @@ public class ManageAppointmentUI extends JFrame {
             currentPage++;
             updateTable();
         }
-    }
-
-    private void loadAllAppointments() {
-        tableModel.setRowCount(0);
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm a");
-        Iterator<Appointment> it = fullAppointmentList.getIterator();
-        while (it.hasNext()) {
-            Appointment app = it.next();
-            tableModel.addRow(new Object[]{
-                app.getAppointmentID(),
-                app.getPatient().getName(),
-                app.getDoctor().getName(),
-                app.getAppointmentDate().format(dateFormatter),
-                app.getAppointmentTime().format(timeFormatter),
-                app.getStatus()
-            });
-        }
-    }
-
-    public void refreshTableAndSave() {
-        loadAllAppointments();
-        fileManager.writeAppointmentsToFile("appointments.txt", fullAppointmentList);
     }
 
     private void editSelectedAppointment() {
@@ -265,8 +258,7 @@ public class ManageAppointmentUI extends JFrame {
         if (confirm == JOptionPane.YES_OPTION) {
             String result = appointmentControl.deleteAppointment(appointmentId);
             if (result.startsWith("Success")) {
-                fileManager.writeAppointmentsToFile("src/main/java/Data File/appointments", fullAppointmentList);
-                loadAllAppointments(); // Refresh table
+                performSearch(); // Refresh table
                 JOptionPane.showMessageDialog(this, result);
             } else {
                 JOptionPane.showMessageDialog(this, result, "Error", JOptionPane.ERROR_MESSAGE);
@@ -295,13 +287,13 @@ public class ManageAppointmentUI extends JFrame {
 
         // Perform the sort
         if (isAscending) {
-            fullAppointmentList.sort(comparator);
+            filteredAppointmentList.sort(comparator);
         } else {
-            fullAppointmentList.sortDescending(comparator); // Use the new descending sort method
+            filteredAppointmentList.sortDescending(comparator); // Use the new descending sort method
         }
         
         // Refresh the table to show the sorted data
-        loadAllAppointments();
+        updateTable();
     }
     
     private void styleButton(JButton button) {
@@ -315,5 +307,31 @@ public class ManageAppointmentUI extends JFrame {
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    }
+    
+    /**
+     * A custom renderer for the table header to display sort arrows.
+     */
+    private class SortableHeaderRenderer implements TableCellRenderer {
+        private final TableCellRenderer delegate;
+
+        public SortableHeaderRenderer(TableCellRenderer delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component c = delegate.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            if (c instanceof JLabel) {
+                JLabel label = (JLabel) c;
+                label.setHorizontalAlignment(JLabel.CENTER);
+                // Convert view column index to model column index
+                int modelColumn = table.convertColumnIndexToModel(column);
+                if (modelColumn == lastSortedColumn) {
+                    label.setText(value.toString() + (isAscending ? " ▲" : " ▼"));
+                }
+            }
+            return c;
+        }
     }
 }
