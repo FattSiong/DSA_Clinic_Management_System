@@ -44,7 +44,7 @@ public class MainUI extends JFrame {
             ListInterface<Patient> patientList, ListInterface<Queue> queueList, ListInterface<Doctor> doctorList,
             ListInterface<Medicine> medicineList, ListInterface<Schedule> scheduleList,
             ListInterface<Appointment> appointmentList, ListInterface<Consultation> consultationList,
-            ListInterface<Treatment> treatmentList, ListInterface<Queue> queueList) {
+            ListInterface<Treatment> treatmentList) {
 
         this.patientList = patientList;
         this.queueList = queueList;
