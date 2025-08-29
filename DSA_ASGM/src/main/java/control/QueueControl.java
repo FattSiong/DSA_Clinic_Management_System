@@ -44,7 +44,7 @@ public class QueueControl {
             }
             int newQueueNumber = highestQueueNumber + 1;
 
-            patientQueue.add(new Queue(patient, newQueueNumber));
+            //patientQueue.add(new Queue(patient, newQueueNumber));
         }
     }
 

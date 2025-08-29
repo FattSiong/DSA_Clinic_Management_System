@@ -24,6 +24,10 @@ public class PatientControl {
         ReadWriteFile.readPatientsFromFile(PATIENT_FILE, this.patientList);
     }
 
+    public PatientControl(ListInterface<Patient> pList) {
+        this.patientList = pList;
+    }
+
     public ListInterface<Patient> getPatientList() {
         return patientList;
     }
@@ -59,15 +63,25 @@ public class PatientControl {
         }
         return false;
     }
-    
+
     public boolean deletePatient(String patientId) {
-    for (int i = 1; i <= patientList.getLength(); i++) {
-        if (patientList.getEntry(i).getPatientID().equals(patientId)) {
-            patientList.remove(i);
-            ReadWriteFile.writePatientsToFile(PATIENT_FILE, this.patientList);
-            return true; // Deletion successful
+        for (int i = 1; i <= patientList.getLength(); i++) {
+            if (patientList.getEntry(i).getPatientID().equals(patientId)) {
+                patientList.remove(i);
+                ReadWriteFile.writePatientsToFile(PATIENT_FILE, this.patientList);
+                return true; // Deletion successful
+            }
         }
+        return false; // Patient not found
     }
-    return false; // Patient not found
-}
+
+    public Patient findPatientByIc(String icNumber) {
+        if (icNumber == null || icNumber.trim().isEmpty()) {
+            return null;
+        }
+
+        // Use the find method from the ADT, passing the search condition as a lambda expression.
+        // The search algorithm itself is now inside the DoublyLinkedList.
+        return patientList.find(patient -> patient.getIcNumber().equals(icNumber.trim()));
+    }
 }
