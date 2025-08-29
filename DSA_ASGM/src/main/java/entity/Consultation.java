@@ -13,36 +13,33 @@ import java.time.LocalDate;
 public class Consultation implements Comparable<Consultation> {
 
     private String consultationID;
-    private Patient patient;         // Direct link to the patient
-    private Doctor doctor;           // Direct link to the doctor
-    private Appointment appointment; // This can be null for walk-ins
+    private Appointment appointment; // For scheduled patients
+    private Queue queue; // For walk-in patients
     private String diagnosis;
     private String notes;
     private LocalDate consultationDate;
 
-    // --- Constructor for SCHEDULED patients ---
+    // --- Constructor for SCHEDULED patients (from an Appointment) ---
     public Consultation(String consultationID, Appointment appointment, String diagnosis, String notes, LocalDate consultationDate) {
         if (appointment == null) {
             throw new IllegalArgumentException("Appointment cannot be null for a scheduled consultation.");
         }
         this.consultationID = consultationID;
         this.appointment = appointment;
-        this.patient = appointment.getPatient(); // Get patient from the appointment
-        this.doctor = appointment.getDoctor();   // Get doctor from the appointment
+        this.queue = null;
         this.diagnosis = diagnosis;
         this.notes = notes;
         this.consultationDate = consultationDate;
     }
 
-    // --- Constructor for WALK-IN patients ---
-    public Consultation(String consultationID, Patient patient, Doctor doctor, String diagnosis, String notes, LocalDate consultationDate) {
-        if (patient == null || doctor == null) {
-            throw new IllegalArgumentException("Patient and Doctor cannot be null for a walk-in consultation.");
+    // --- Constructor for WALK-IN patients (from a Queue) ---
+    public Consultation(String consultationID, Queue queue, String diagnosis, String notes, LocalDate consultationDate) {
+        if (queue == null) {
+            throw new IllegalArgumentException("Queue cannot be null for a walk-in consultation.");
         }
         this.consultationID = consultationID;
         this.appointment = null; // No appointment for walk-ins
-        this.patient = patient;
-        this.doctor = doctor;
+        this.queue = queue;
         this.diagnosis = diagnosis;
         this.notes = notes;
         this.consultationDate = consultationDate;
@@ -54,16 +51,30 @@ public class Consultation implements Comparable<Consultation> {
     }
 
     public Patient getPatient() {
-        return patient;
+        if (appointment != null) {
+            return appointment.getPatient();
+        } else if (queue != null) {
+            return queue.getPatient();
+        }
+        return null;
     }
 
     public Doctor getDoctor() {
-        return doctor;
+        if (appointment != null) {
+            return appointment.getDoctor();
+        } else if (queue != null) {
+            return queue.getDoctor();
+        }
+        return null;
     }
-
+    
     public Appointment getAppointment() {
         return appointment;
-    } // Can return null
+    }
+
+    public Queue getQueue() {
+        return queue;
+    }
 
     public String getDiagnosis() {
         return diagnosis;
@@ -77,7 +88,7 @@ public class Consultation implements Comparable<Consultation> {
         return consultationDate;
     }
 
-    // Setters...
+    // Setters
     public void setDiagnosis(String diagnosis) {
         this.diagnosis = diagnosis;
     }
@@ -93,15 +104,17 @@ public class Consultation implements Comparable<Consultation> {
 
     @Override
     public String toString() {
-        // Check if there's an appointment ID to display
-        String appointmentIdStr = (appointment != null) ? appointment.getAppointmentID() : "N/A (Walk-in)";
+        String patientName = (getPatient() != null) ? getPatient().getName() : "N/A";
+        String doctorName = (getDoctor() != null) ? getDoctor().getName() : "N/A";
+        String sourceId = (appointment != null) ? "Appointment ID: " + appointment.getAppointmentID() : "Queue No: " + queue.getQueueNumber();
 
         return "Consultation{"
                 + "consultationID='" + consultationID + '\''
-                + ", patient=" + patient.getName()
-                + ", doctor=" + doctor.getName()
-                + ", appointmentID=" + appointmentIdStr
+                + ", patient=" + patientName
+                + ", doctor=" + doctorName
+                + ", source=" + sourceId
                 + ", diagnosis='" + diagnosis + '\''
+                + ", notes='" + notes + '\''
                 + '}';
     }
 }

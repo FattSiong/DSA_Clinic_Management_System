@@ -46,6 +46,11 @@ public class QueueControl {
 
         initializeQueue();
     }
+    
+    public QueueControl(ListInterface<Queue> qList) {
+        this.patientQueue = qList;
+        this.fileManager = new ReadWriteFile();
+    }
 
     private void loadInitialData() {
         PatientControl patientControl = new PatientControl();
@@ -299,5 +304,53 @@ public class QueueControl {
         if (onQueueUpdateCallback != null) {
             onQueueUpdateCallback.run();
         }
+    }
+    
+    /**
+     * Checks if a doctor is currently busy with a walk-in patient.
+     * @param doctor The doctor to check.
+     * @return True if the doctor is busy, false otherwise.
+     */
+    public boolean isDoctorBusyWithQueue(Doctor doctor) {
+        if (doctor == null) {
+            return false;
+        }
+        
+        Iterator<Queue> it = patientQueue.getIterator();
+        while (it.hasNext()) {
+            Queue queueEntry = it.next();
+            // Check if a queue entry is assigned to this doctor and is currently active
+            if (queueEntry.getDoctor() != null &&
+                queueEntry.getDoctor().getDoctorID().equals(doctor.getDoctorID()) &&
+                queueEntry.getStatus().equals("In Consultation")) {
+                return true; // Found a match, the doctor is busy
+            }
+        }
+        
+        return false; // No active queue entry found for this doctor
+    }
+    
+    /**
+     * Filters the main queue list to get only entries with "In Consultation" status.
+     * @return A new list containing only the active consultation queue entries.
+     */
+    public ListInterface<Queue> getInConsultationQueue() {
+        ListInterface<Queue> inConsultationList = new DoublyLinkedList<>();
+        Iterator<Queue> it = patientQueue.getIterator();
+        while (it.hasNext()) {
+            Queue queueEntry = it.next();
+            if (queueEntry.getStatus().equals("In Consultation")) {
+                inConsultationList.add(queueEntry);
+            }
+        }
+        return inConsultationList;
+    }
+    
+    /**
+     * Updates the queue data file.
+     * This method is called by the UI after a consultation is saved.
+     */
+    public void updateQueueFile() {
+        fileManager.writeQueuesToFile("src/main/java/Data File/queues", patientQueue);
     }
 }
