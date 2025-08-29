@@ -36,16 +36,10 @@ public class PatientListUI extends javax.swing.JFrame {
 
     /**
      * Creates new form PatientListUI
+     * 
+     * @param patientControl
+     * @param queueControl
      */
-    public PatientListUI() {
-        this.patientControl = new PatientControl();
-        this.queueControl = new QueueControl();
-
-        initComponents();
-        setupTable();
-        setupEventListeners();
-    }
-
     public PatientListUI(PatientControl patientControl, QueueControl queueControl) {
         this.patientControl = patientControl;
         this.queueControl = queueControl;

@@ -5,6 +5,8 @@
 package boundary;
 
 import adt.ListInterface; // Make sure to import your ADT package
+import control.PatientControl;
+import control.QueueControl;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDateTime;
@@ -35,7 +37,7 @@ public class MainUI extends JFrame {
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
     private ListInterface<Treatment> treatmentList;
-   
+
     private static ReadWriteFile fileManager = new ReadWriteFile();
 
     public MainUI(
@@ -98,12 +100,15 @@ public class MainUI extends JFrame {
         buttonPanel.add(btnConsultation);
         buttonPanel.add(btnTreatment);
         buttonPanel.add(btnPharmacy);
-        
+
         btnPatient.addActionListener(new ActionListener() {
+            PatientControl patientControl = new PatientControl();
+            QueueControl queueControl = new QueueControl();
+
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Navigating to Patient Management Module...");
-                new PatientListUI().setVisible(true);
+                new PatientListUI(patientControl, queueControl).setVisible(true);
             }
         });
 

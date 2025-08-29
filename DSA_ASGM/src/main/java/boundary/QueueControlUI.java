@@ -19,48 +19,45 @@ public class QueueControlUI extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(QueueControlUI.class.getName());
 
     private final QueueControl queueControl;
-    private final QueueDisplayUI queueDisplayUI; // The public display screen
+    private final QueueDisplayUI queueDisplayUI;
     private int selectedRoom = 0;
 
     /**
      * Creates new form QueueControlUI
      *
+     * @param queueControl
      */
     public QueueControlUI(QueueControl queueControl) {
         initComponents();
         this.queueControl = queueControl;
 
-        // Create and manage the public display UI from this control panel
         this.queueDisplayUI = new QueueDisplayUI();
         this.queueDisplayUI.setVisible(true);
 
         this.queueControl.setOnQueueUpdateCallback(() -> refreshDisplay(null, 0));
 
         addNumberButtonListeners();
-        
+
         this.addWindowListener(new java.awt.event.WindowAdapter() {
-        @Override
-        public void windowActivated(java.awt.event.WindowEvent e) {
-            System.out.println("Window Activated: Refreshing room statuses..."); // Optional line for debugging
-            updateRoomStatuses();
-        }
-    });
+            @Override
+            public void windowActivated(java.awt.event.WindowEvent e) {
+                updateRoomStatuses();
+            }
+        });
 
         Queue lastCalledPatient = queueControl.findLastCalledPatient();
         int roomNumber = 0;
 
-        // 2. If a patient was found, get their room number.
         if (lastCalledPatient != null && lastCalledPatient.getDoctor() != null) {
-            String roomStr = lastCalledPatient.getDoctor().getRoomNumber(); // Gets "ROOM1", "ROOM2", etc.
+            String roomStr = lastCalledPatient.getDoctor().getRoomNumber();
             try {
                 // Extract just the number from the string
                 roomNumber = Integer.parseInt(roomStr.replaceAll("[^0-9]", ""));
             } catch (NumberFormatException e) {
-                roomNumber = 0; // Default to 0 if something goes wrong
+                roomNumber = 0;
             }
         }
 
-        // 3. Perform the initial refresh, displaying the last called patient if one was found.
         refreshDisplay(lastCalledPatient, roomNumber);
     }
 
@@ -73,14 +70,10 @@ public class QueueControlUI extends javax.swing.JFrame {
         javax.swing.JLabel[] statusLabels = {null, lblRoom1Status, lblRoom2Status, lblRoom3Status, lblRoom4Status};
 
         for (int i = 1; i <= 4; i++) {
-            // --- KEY CHANGE HERE ---
-            // Call the new method that uses the fixed room-to-doctor logic
             String status = queueControl.getRoomStatusForToday(i);
 
-            // Update the status label (e.g., "Available", "Busy", "Unavailable")
             statusLabels[i].setText(status);
 
-            // Enable the room button ONLY if the status is "Available"
             roomButtons[i].setEnabled("Available".equals(status));
         }
     }
@@ -89,16 +82,14 @@ public class QueueControlUI extends javax.swing.JFrame {
      * Refreshes the public queue display with the latest data.
      */
     private void refreshDisplay(Queue calledPatient, int roomNumber) {
-        // Get the patient being served in each room (will be null if the room is free)
         Queue patient1 = queueControl.recallPatient(queueControl.findDoctorByRoomNumber("1"));
         Queue patient2 = queueControl.recallPatient(queueControl.findDoctorByRoomNumber("2"));
         Queue patient3 = queueControl.recallPatient(queueControl.findDoctorByRoomNumber("3"));
         Queue patient4 = queueControl.recallPatient(queueControl.findDoctorByRoomNumber("4"));
 
-        // Call the updateAll method, passing along the newly called patient and room number
         queueDisplayUI.updateAll(
-                calledPatient, // Pass the specific patient who was just called
-                roomNumber, // Pass the room they were called to
+                calledPatient,
+                roomNumber,
                 queueControl.getWaitingPatients(),
                 patient1,
                 patient2,
@@ -106,7 +97,6 @@ public class QueueControlUI extends javax.swing.JFrame {
                 patient4
         );
 
-        // Also update this control panel's own status labels
         updateRoomStatuses();
     }
 
@@ -457,7 +447,7 @@ public class QueueControlUI extends javax.swing.JFrame {
             Queue calledPatient = queueControl.callNextPatientInQueue(doc);
             if (calledPatient != null) {
                 ShowMessage.showSuccess(this, "Calling next patient: " + calledPatient.getQueueNumber());
-                refreshDisplay(calledPatient, selectedRoom); // Pass the patient and room
+                refreshDisplay(calledPatient, selectedRoom);
             } else {
                 ShowMessage.showInfo(this, "No patients are currently waiting.", "Queue Empty");
             }
@@ -474,7 +464,6 @@ public class QueueControlUI extends javax.swing.JFrame {
             Queue patientToRecall = queueControl.recallPatient(doc);
             if (patientToRecall != null) {
                 ShowMessage.showInfo(this, "Recalling patient " + patientToRecall.getQueueId() + " to Room " + selectedRoom, "Recall");
-                // Here you would trigger the display update for the recall
                 queueDisplayUI.updateMainDisplay(patientToRecall, selectedRoom);
             } else {
                 ShowMessage.showInfo(this, "No patient to recall for this room.", "Recall");

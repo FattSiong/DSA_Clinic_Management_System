@@ -7,9 +7,12 @@ package boundary;
 import adt.ListInterface;
 import java.util.Iterator;
 import entity.Queue;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.swing.JPanel;
 import javax.swing.Timer;
 import javax.swing.table.DefaultTableModel;
 
@@ -34,7 +37,6 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         lblQueueNo.setText("----");
         lblName.setText("Welcome");
         lblRoomNo.setText("Room --");
-        // Call with null for each room to show they are empty on startup
         updateRoomStatusPanel(null, null, null, null);
         DefaultTableModel model = (DefaultTableModel) tblQueueList.getModel();
         model.setRowCount(0);
@@ -60,10 +62,10 @@ public class QueueDisplayUI extends javax.swing.JFrame {
      * @param calledPatient The patient just called.
      * @param roomNumber The room they were called to.
      * @param waitingList The list of patients still waiting.
-     * @param roomStatuses An array where the index is the room number and the
-     * value is the Queue object of the patient being served.
-     * @param scheduleStatuses An array with the schedule status (e.g., "On
-     * Leave").
+     * @param room1Patient
+     * @param room2Patient
+     * @param room3Patient
+     * @param room4Patient
      */
     public void updateAll(
             Queue calledPatient, int roomNumber, ListInterface<Queue> waitingList,
@@ -87,6 +89,7 @@ public class QueueDisplayUI extends javax.swing.JFrame {
             lblQueueNo.setText(String.format("%04d", calledPatient.getQueueId()));
             lblName.setText(calledPatient.getPatient().getName());
             lblRoomNo.setText("Room " + roomNumber);
+            blinkPanel(pnlCurrentQueue);
         }
     }
 
@@ -140,6 +143,36 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         } else {
             lblRoom4Status.setText("----");
         }
+    }
+
+    /**
+     * Makes a panel blink 3 times to draw attention.
+     *
+     * @param panel The JPanel to animate.
+     */
+    private void blinkPanel(JPanel panel) {
+        Color originalColor = panel.getBackground();
+        Color blinkColor = Color.CYAN;
+
+        AtomicInteger blinkCount = new AtomicInteger(0);
+
+        Timer timer = new Timer(250, null);
+        timer.addActionListener(e -> {
+            if (blinkCount.get() >= 6) {
+                panel.setBackground(originalColor);
+                timer.stop();
+                return;
+            }
+
+            if (panel.getBackground().equals(originalColor)) {
+                panel.setBackground(blinkColor);
+            } else {
+                panel.setBackground(originalColor);
+            }
+
+            blinkCount.incrementAndGet();
+        });
+        timer.start();
     }
 
     /**
