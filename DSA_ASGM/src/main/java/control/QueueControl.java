@@ -6,9 +6,11 @@ package control;
 
 import adt.DoublyLinkedList;
 import adt.ListInterface;
+import entity.Doctor;
 import java.util.Iterator;
 import entity.Patient;
 import entity.Queue;
+import utility.ReadWriteFile;
 
 /**
  *
@@ -17,11 +19,17 @@ import entity.Queue;
 public class QueueControl {
 
     private ListInterface<Queue> patientQueue;
+    private ReadWriteFile fileManager;
     private PatientControl patientControl;
 
     public QueueControl() {
         this.patientQueue = new DoublyLinkedList<>();
         this.patientControl = new PatientControl();
+    }
+    
+    public QueueControl(ListInterface<Queue> qList) {
+        this.patientQueue = qList;
+        this.fileManager = new ReadWriteFile();
     }
 
     public ListInterface<Patient> getAllPatients() {
@@ -83,5 +91,53 @@ public class QueueControl {
                 return;
             }
         }
+    }
+    
+    /**
+     * Checks if a doctor is currently busy with a walk-in patient.
+     * @param doctor The doctor to check.
+     * @return True if the doctor is busy, false otherwise.
+     */
+    public boolean isDoctorBusyWithQueue(Doctor doctor) {
+        if (doctor == null) {
+            return false;
+        }
+        
+        Iterator<Queue> it = patientQueue.getIterator();
+        while (it.hasNext()) {
+            Queue queueEntry = it.next();
+            // Check if a queue entry is assigned to this doctor and is currently active
+            if (queueEntry.getDoctor() != null &&
+                queueEntry.getDoctor().getDoctorID().equals(doctor.getDoctorID()) &&
+                queueEntry.getStatus().equals("In Consultation")) {
+                return true; // Found a match, the doctor is busy
+            }
+        }
+        
+        return false; // No active queue entry found for this doctor
+    }
+    
+    /**
+     * Filters the main queue list to get only entries with "In Consultation" status.
+     * @return A new list containing only the active consultation queue entries.
+     */
+    public ListInterface<Queue> getInConsultationQueue() {
+        ListInterface<Queue> inConsultationList = new DoublyLinkedList<>();
+        Iterator<Queue> it = patientQueue.getIterator();
+        while (it.hasNext()) {
+            Queue queueEntry = it.next();
+            if (queueEntry.getStatus().equals("In Consultation")) {
+                inConsultationList.add(queueEntry);
+            }
+        }
+        return inConsultationList;
+    }
+    
+    /**
+     * Updates the queue data file.
+     * This method is called by the UI after a consultation is saved.
+     */
+    public void updateQueueFile() {
+        fileManager.writeQueuesToFile("src/main/java/Data File/queues", patientQueue);
     }
 }
