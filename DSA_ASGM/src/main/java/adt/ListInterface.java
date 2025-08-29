@@ -6,6 +6,7 @@ package adt;
 
 import java.util.Iterator;
 import java.util.Comparator;
+import java.util.function.Predicate;
 
 /**
  *
@@ -111,6 +112,14 @@ import java.util.Comparator;
     public int binarySearch(T anEntry);
     
     /**
+     * Finds the first item in the list that matches the given condition.
+     *
+     * @param condition The condition (a Predicate) to test each element against.
+     * @return The first element that matches the condition, or null if no match is found.
+     */
+    public T find(Predicate<T> condition);
+    
+    /**
      * Sorts the elements in the list in ascending order.
      */
     public void sort();
@@ -127,6 +136,14 @@ import java.util.Comparator;
      * @param comparator The Comparator used to determine the order of the list.
      */
     public void sort(Comparator<T> comparator);
+    
+    /**
+     * Sorts the elements in the list in descending order according to the order
+     * induced by the specified Comparator.
+     *
+     * @param comparator The Comparator used to determine the order of the list.
+     */
+    public void sortDescending(Comparator<T> comparator);
     
     
 }

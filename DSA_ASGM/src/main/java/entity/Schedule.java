@@ -17,7 +17,7 @@ public class Schedule implements Comparable<Schedule> {
     private LocalDate dutyDate;
     private LocalTime startTime;
     private LocalTime endTime;
-    private String availability; // e.g., "Available", "On Leave", "Busy"
+    private String availability; // e.g., "Available", "On Leave"
 
     public Schedule(String scheduleID, Doctor doctor, LocalDate dutyDate, LocalTime startTime, LocalTime endTime, String availability) {
         this.scheduleID = scheduleID;

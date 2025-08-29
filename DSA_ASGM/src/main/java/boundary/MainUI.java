@@ -17,6 +17,7 @@ import entity.Consultation;
 import entity.Treatment;
 import entity.Appointment;
 import entity.Queue;
+import utility.ReadWriteFile;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -34,6 +35,8 @@ public class MainUI extends JFrame {
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
     private ListInterface<Treatment> treatmentList;
+   
+    private static ReadWriteFile fileManager = new ReadWriteFile();
 
     public MainUI(
             ListInterface<Patient> patientList, ListInterface<Queue> queueList, ListInterface<Doctor> doctorList,
@@ -109,7 +112,7 @@ public class MainUI extends JFrame {
         });
 
         btnConsultation.addActionListener(e -> {
-            new ConsultationUI(this, appointmentList).setVisible(true);
+            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList).setVisible(true);
             this.setVisible(false);
         });
 

@@ -27,6 +27,10 @@ public class PatientControl {
         fileManager.readPatientsFromFile(PATIENT_FILE, this.patientList);
     }
 
+    public PatientControl(ListInterface<Patient> pList) {
+        this.patientList = pList;
+    }
+
     public ListInterface<Patient> getPatientList() {
         return patientList;
     }
@@ -72,5 +76,15 @@ public class PatientControl {
             }
         }
         return false; // Patient not found
+    }
+
+    public Patient findPatientByIc(String icNumber) {
+        if (icNumber == null || icNumber.trim().isEmpty()) {
+            return null;
+        }
+
+        // Use the find method from the ADT, passing the search condition as a lambda expression.
+        // The search algorithm itself is now inside the DoublyLinkedList.
+        return patientList.find(patient -> patient.getIcNumber().equals(icNumber.trim()));
     }
 }
