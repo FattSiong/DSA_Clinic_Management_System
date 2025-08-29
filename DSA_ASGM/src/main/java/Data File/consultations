@@ -1,5 +1,11 @@
-C1002|P1003|D1001|N/A|Headache|Prescribed Paracetamol.|2025-08-22
-C1003|P1002|D1002|A1002|hihi||2025-08-26
-C1004|P1002|D1002|A1019|666||2025-08-27
-C1005|P1001|D1001|A1021|test|test|2025-08-28
-C1006|P1001|D1001|A1018|dadasd|dsadasd|2025-08-29
+C1003|P1001|D1001|Q1|Stomach Ache|Diagnosed with gastritis, no follow-up needed.|2025-08-28
+C1004|P1002|D1002|A1003|Check-up|Routine check-up, patient is healthy.|2025-08-28
+C1005|P1002|D1002|Q2|Cold Symptoms|Prescribed cough syrup, patient needs to rest.|2025-08-29
+C1006|P1002|D1002|A1004|Sprained Ankle|Advised to use crutches for a week.|2025-08-29
+C1007|P1003|D1003|Q3|Dental Pain|Referred to a dentist.|2025-08-29
+C1008|P1002|D1002|A1005|Allergies|Prescribed antihistamines for seasonal allergies.|2025-08-29
+C1009|P1002|D1002|A1006|Sore Throat|Infection, prescribed antibiotics.|2025-08-29
+C1010|P1002|D1002|A1007|Flu-like Symptoms|Confirmed influenza, advised to self-isolate.|2025-08-29
+C1011|P1006|D1001|A1027|fffdsf|fdsfsd|2025-08-29
+C1012|P1005|D1004|Q4|dsadsad|dsadsadas|2025-08-29
+C1013|P1003|D1003|Q3|dsadas|dasdad|2025-08-29
