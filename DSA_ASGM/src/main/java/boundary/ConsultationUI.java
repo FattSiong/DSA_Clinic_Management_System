@@ -4,7 +4,8 @@
  */
 package boundary;
 
-import adt.ListInterface; // Import your ADT package
+import adt.ListInterface;
+import control.ConsultationControl; 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
@@ -14,7 +15,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import entity.Appointment;
-import boundary.MainUI;
+import entity.Doctor;
+import entity.Patient;
+import entity.Consultation;
+import utility.ReadWriteFile;
 
 /**
  *
@@ -26,11 +30,22 @@ public class ConsultationUI extends JFrame {
     private JTable appointmentsTable;
     private DefaultTableModel tableModel;
     private ListInterface<Appointment> appointmentList;
+    private ListInterface<Patient> patientList;
+    private ListInterface<Doctor> doctorList;
+    private ListInterface<Consultation> consultationList;
     private JFrame parentFrame;
+    private ReadWriteFile fileManager;
+    private ConsultationControl consultationControl;
+    
 
-    public ConsultationUI(JFrame parent, ListInterface<Appointment> appointments) {
+    public ConsultationUI(JFrame parent, ReadWriteFile fileManager, ListInterface<Appointment> appointments, ListInterface<Patient> patients, ListInterface<Doctor> doctors, ListInterface<Consultation> consultations) {
+        this.fileManager = fileManager;
         this.parentFrame = parent;
         this.appointmentList = appointments;
+        this.patientList = patients;
+        this.doctorList = doctors;
+        this.consultationList = consultations;
+        this.consultationControl = new ConsultationControl(appointments, consultations);
 
         // --- Frame Setup ---
         setTitle("Consultation Management");
@@ -88,13 +103,16 @@ public class ConsultationUI extends JFrame {
         contentPanel.add(tablePanel, BorderLayout.CENTER);
 
         // --- Actions Panel (SOUTH of Content Panel) ---
-        JPanel actionsPanel = new JPanel(new GridLayout(2, 3, 10, 10));
+        JPanel actionsPanel = new JPanel(new GridLayout(3, 3, 10, 10));
         actionsPanel.setBorder(BorderFactory.createTitledBorder("Actions"));
         actionsPanel.setBackground(Color.WHITE);
 
         JButton btnStartConsultation = new JButton("Start Consultation");
         JButton btnBookNew = new JButton("Book New Appointment");
         JButton btnScheduleFollowUp = new JButton("Schedule Follow-up");
+        JButton btnManageAppointments = new JButton("Manage Appointments");
+        JButton btnManageConsultations = new JButton("Manage Consultations");
+        JButton btnCancelAppointment = new JButton("Cancel Appointment");
         JButton btnViewHistory = new JButton("View Patient History");
         JButton btnGenerateReport = new JButton("Generate Reports");
         JButton btnBack = new JButton("Back to Main Menu");
@@ -103,6 +121,9 @@ public class ConsultationUI extends JFrame {
         styleButton(btnStartConsultation);
         styleButton(btnBookNew);
         styleButton(btnScheduleFollowUp);
+        styleButton(btnManageAppointments, new Color(66, 139, 202)); // Blue
+        styleButton(btnManageConsultations, new Color(66, 139, 202));
+        styleButton(btnCancelAppointment, new Color(240, 173, 78));
         styleButton(btnViewHistory);
         styleButton(btnGenerateReport);
         styleButton(btnBack, new Color(217, 83, 79)); // Red color for back button
@@ -110,6 +131,9 @@ public class ConsultationUI extends JFrame {
         actionsPanel.add(btnStartConsultation);
         actionsPanel.add(btnBookNew);
         actionsPanel.add(btnScheduleFollowUp);
+        actionsPanel.add(btnManageAppointments);
+        actionsPanel.add(btnManageConsultations);
+        actionsPanel.add(btnCancelAppointment);
         actionsPanel.add(btnViewHistory);
         actionsPanel.add(btnGenerateReport);
         actionsPanel.add(btnBack);
@@ -124,18 +148,70 @@ public class ConsultationUI extends JFrame {
             int selectedRow = appointmentsTable.getSelectedRow();
             if (selectedRow >= 0) {
                 String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
-                JOptionPane.showMessageDialog(this, "Starting consultation for Appointment ID: " + appointmentId);
+                Appointment selectedApp = findAppointmentById(appointmentId);
+
+                if (selectedApp != null) {
+                    if (!selectedApp.getStatus().equals("Scheduled")) {
+                        JOptionPane.showMessageDialog(this, "Only 'Scheduled' appointments can be started.", "Action Not Allowed", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    // Open the details form, passing the control class
+                    new ConsultationDetailsUI(this, selectedApp, fileManager, consultationControl).setVisible(true);
+                }
             } else {
                 JOptionPane.showMessageDialog(this, "Please select an appointment to start.", "No Selection", JOptionPane.WARNING_MESSAGE);
             }
         });
 
         btnBookNew.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Opening new appointment booking window...");
+            new AppointmentFormUI(this, fileManager, patientList, doctorList, appointmentList).setVisible(true);
         });
 
         btnScheduleFollowUp.addActionListener(e -> {
-            // ... (action listener logic)
+            int selectedRow = appointmentsTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
+                Appointment selectedApp = findAppointmentById(appointmentId);
+                if (selectedApp != null) {
+                    // Open form in "Follow-up" mode with patient and doctor pre-filled
+                    new AppointmentFormUI(this, fileManager, selectedApp.getPatient(), selectedApp.getDoctor(), patientList, doctorList, appointmentList).setVisible(true);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select an appointment to schedule a follow-up.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        btnManageAppointments.addActionListener(e -> {
+            new ManageAppointmentUI(appointmentList, patientList, doctorList, fileManager).setVisible(true);
+        });
+
+        btnManageConsultations.addActionListener(e -> {
+            new ManageConsultationUI(consultationList, appointmentList, fileManager).setVisible(true);
+        });
+        
+        btnCancelAppointment.addActionListener(e -> {
+            int selectedRow = appointmentsTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
+                Appointment selectedApp = findAppointmentById(appointmentId);
+
+                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to cancel this appointment?", "Confirm Cancellation", JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.YES_OPTION) {
+                    // Call the control class to do the work
+                    String result = consultationControl.cancelAppointment(selectedApp);
+                    
+                    if (result.startsWith("Success")) {
+                        fileManager.writeAppointmentsToFile("src/main/java/Data File/appointments", appointmentList);
+                        refreshTable();
+                        JOptionPane.showMessageDialog(this, result);
+                    } else {
+                        JOptionPane.showMessageDialog(this, result, "Action Not Allowed", JOptionPane.WARNING_MESSAGE);
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select an appointment to cancel.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            }
         });
 
         btnViewHistory.addActionListener(e -> {
@@ -151,6 +227,10 @@ public class ConsultationUI extends JFrame {
             this.dispose();
         });
     }
+    
+    public void refreshTable() {
+        loadAppointmentData();
+    }
 
     private void loadAppointmentData() {
         tableModel.setRowCount(0);
@@ -160,6 +240,7 @@ public class ConsultationUI extends JFrame {
         Iterator<Appointment> iterator = appointmentList.getIterator();
         while (iterator.hasNext()) {
             Appointment app = iterator.next();
+            System.out.println(app.getAppointmentDate());
             if (app.getAppointmentDate().equals(today)) {
                 tableModel.addRow(new Object[]{
                     app.getAppointmentID(),
@@ -170,6 +251,15 @@ public class ConsultationUI extends JFrame {
                 });
             }
         }
+    }
+    
+     private Appointment findAppointmentById(String id) {
+        Iterator<Appointment> it = appointmentList.getIterator();
+        while (it.hasNext()) {
+            Appointment app = it.next();
+            if (app.getAppointmentID().equals(id)) return app;
+        }
+        return null;
     }
 
     private void styleButton(JButton button) {

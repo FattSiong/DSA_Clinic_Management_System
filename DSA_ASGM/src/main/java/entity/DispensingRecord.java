@@ -15,6 +15,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.Objects;
 import entity.DispensedItem;
+import entity.Doctor;
+import entity.Patient;
 
 public class DispensingRecord implements Comparable<DispensingRecord> {
 
@@ -22,7 +24,6 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
     private String patientName;
     private String doctorName;
     private LocalDateTime dispensingDateTime;
-    // Here we use another DoublyLinkedList inside our object!
     private ListInterface<DispensedItem> dispensedItems;
     private double totalAmount;
 

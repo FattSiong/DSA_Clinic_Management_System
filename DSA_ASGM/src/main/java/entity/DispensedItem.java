@@ -9,7 +9,7 @@ package entity;
  * @author Melvin
  */
 public class DispensedItem implements Comparable<DispensedItem> {
-    
+
     private String recordId;
     private Medicine medicine; // A reference to the medicine dispensed
     private int quantityDispensed;
@@ -18,7 +18,8 @@ public class DispensedItem implements Comparable<DispensedItem> {
         this.medicine = medicine;
         this.quantityDispensed = quantityDispensed;
     }
-    
+
+    //Getter
     public String getRecordId() {
         return recordId;
     }
@@ -35,6 +36,11 @@ public class DispensedItem implements Comparable<DispensedItem> {
         return medicine.getPrice() * quantityDispensed;
     }
 
+    //Setter
+    public void setRecordId(String recordID) {
+        this.recordId = recordId;
+    }
+
     @Override
     public int compareTo(DispensedItem other) {
         return 0;
@@ -43,6 +49,6 @@ public class DispensedItem implements Comparable<DispensedItem> {
     @Override
     public String toString() {
         return String.format("%-5s |  - %-25s | Qty: %-4d | Subtotal: $%.2f",
-                getRecordId(),medicine.getName(), quantityDispensed, getSubtotal());
+                getRecordId(), medicine.getName(), quantityDispensed, getSubtotal());
     }
 }

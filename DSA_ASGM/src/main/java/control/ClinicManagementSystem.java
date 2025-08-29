@@ -72,14 +72,13 @@ public class ClinicManagementSystem {
         });
 
         // Optional: Add a shutdown hook to save data when the application closes
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("Saving all data...");
-            readWriteFile.saveAllData(
-                    patientList, queueList, doctorList, medicineList, scheduleList,
-                    appointmentList, consultationList, treatmentList, dispensedItemList,
-                    dispensingRecordList
-            );
-            System.out.println("Data saved successfully.");
-        }));
+//        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+//            System.out.println("Saving all data...");
+//            readWriteFile.saveAllData(
+//                    patientList, queueList, doctorList, medicineList, scheduleList,
+//                    appointmentList, consultationList, treatmentList
+//            );
+//            System.out.println("Data saved successfully.");
+//        }));
     }
 }

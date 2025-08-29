@@ -336,6 +336,16 @@ public class DoublyLinkedList<T extends Comparable<T>> implements ListInterface<
         firstNode = sortedList;
         updateLastNode(); // Helper method to find and set the lastNode
     }
+    
+    /**
+     * Sorts the list in descending order based on a provided Comparator.
+     * This is implemented by calling the ascending sort method with a reversed comparator.
+     * @param comparator The Comparator that defines the sorting logic.
+     */
+    @Override
+    public void sortDescending(Comparator<T> comparator) {
+        sort(comparator.reversed());
+    }
 
     private void updateLastNode() {
         if (firstNode == null) {
