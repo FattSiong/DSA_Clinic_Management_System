@@ -6,15 +6,15 @@ package control;
 
 import adt.DoublyLinkedList;
 import adt.ListInterface;
-import entity.Doctor;
 import entity.Patient;
 import entity.Queue;
+import entity.Doctor;
 import entity.Schedule;
+import utility.ReadWriteFile;
+import java.util.Iterator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Iterator;
-import utility.ReadWriteFile;
 
 /**
  *
@@ -41,15 +41,10 @@ public class QueueControl {
         this.doctorList = new DoublyLinkedList<>();
         this.scheduleList = new DoublyLinkedList<>();
         this.fileManager = new ReadWriteFile();
-
+      
         loadInitialData();
 
         initializeQueue();
-    }
-    
-    public QueueControl(ListInterface<Queue> qList) {
-        this.patientQueue = qList;
-        this.fileManager = new ReadWriteFile();
     }
 
     private void loadInitialData() {
