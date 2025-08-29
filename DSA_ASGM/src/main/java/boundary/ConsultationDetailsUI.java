@@ -88,11 +88,8 @@ public class ConsultationDetailsUI extends JFrame {
 
         if (result.startsWith("Success")) {
             // Save both files since changes were made to both lists
-            fileManager.writeConsultationsToFile("src/main/java/Data File/consultations", consultationControl.getConsultationList()); // Assuming getter in control
-            fileManager.writeAppointmentsToFile("src/main/java/Data File/appointments", consultationControl.getAppointmentList()); // Assuming getter in control
-
             JOptionPane.showMessageDialog(this, result);
-            parentUI.refreshTable();
+            parentUI.performSearch();
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, result, "Input Error", JOptionPane.ERROR_MESSAGE);

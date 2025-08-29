@@ -100,7 +100,7 @@ public class EditAppointmentUI extends JFrame {
 
         if (result.startsWith("Success")) {
             JOptionPane.showMessageDialog(this, result);
-            parentUI.refreshTableAndSave();
+            parentUI.performSearch();
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, result, "Validation Error", JOptionPane.ERROR_MESSAGE);
