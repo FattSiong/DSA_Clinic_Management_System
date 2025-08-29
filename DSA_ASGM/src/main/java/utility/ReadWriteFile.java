@@ -135,10 +135,6 @@ public class ReadWriteFile {
                 int queueNumber = Integer.parseInt(data[1]);
                 Patient patient = findPatientById(patientList, data[2]);
                 Doctor doctor = data[3].equals("N/A") ? null : findDoctorById(doctorList, data[3]);
-                
-                //LocalTime entryTime = LocalTime.parse(data[4]);
-                //LocalTime exitTime = data[5].equals("N/A") ? null : LocalTime.parse(data[4]);
-                
                 LocalDateTime entryTime = LocalDateTime.parse(data[4]);
                 LocalDateTime exitTime = data[5].equals("N/A") ? null : LocalDateTime.parse(data[5]);
                 
@@ -290,8 +286,6 @@ public class ReadWriteFile {
                 Queue q = it.next();
                 // Use "N/A" as a placeholder for null values
                 String doctorId = (q.getDoctor() != null) ? q.getDoctor().getDoctorID() : "N/A";
-                //String exitTimeStr = (q.getExitTime() != null) ? q.getExitTime().toString() : "N/A";
-                
                 String exitTimeStr = (q.getExitTime() != null) ? q.getExitTime().toString() : "N/A";
 
                 String line = String.join("|",
