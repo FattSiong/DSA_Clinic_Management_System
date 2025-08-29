@@ -10,6 +10,7 @@ import control.ConsultationControl;
 import utility.ReadWriteFile;
 import entity.Appointment;
 import entity.Consultation;
+import entity.Queue;
 import utility.ConsultationComparators; // Import the new comparators
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -48,14 +49,14 @@ public class ManageConsultationUI extends JFrame {
     private int lastSortedColumn = -1;
     private boolean isAscending = true;
 
-    public ManageConsultationUI(JFrame parentFrame, ConsultationUI parentUI, ListInterface<Consultation> conList, ListInterface<Appointment> appList, ReadWriteFile fileManager) {
+    public ManageConsultationUI(JFrame parentFrame, ConsultationUI parentUI, ListInterface<Consultation> conList, ListInterface<Appointment> appList, ListInterface<Queue> queList, ReadWriteFile fileManager) {
         this.parentFrame = parentFrame;
         this.parentUI = parentUI;
         this.fullConsultationList = conList;
         this.filteredConsultationList = conList;
         this.appointmentList = appList;
         this.fileManager = fileManager;
-        this.consultationControl = new ConsultationControl(appList, conList, fileManager);
+        this.consultationControl = new ConsultationControl(appList, conList, queList, fileManager);
 
         setTitle("Manage All Consultations");
         setSize(900, 700);

@@ -1,6 +1,6 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+     * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+     * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package boundary;
 
@@ -8,6 +8,7 @@ import adt.DoublyLinkedList;
 import adt.ListInterface;
 import control.AppointmentControl;
 import control.ConsultationControl;
+import control.QueueControl;
 import entity.*;
 import utility.AppointmentComparators;
 import utility.ReadWriteFile;
@@ -24,6 +25,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Iterator;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 /**
  *
@@ -31,17 +34,24 @@ import java.util.Iterator;
  */
 public class ConsultationUI extends JFrame {
 
+    // Main UI Components
     private JTable appointmentsTable;
-    private DefaultTableModel tableModel;
-    private ListInterface<Appointment> fullTodayAppointmentList;
-    private ListInterface<Appointment> filteredAppointmentList;
+    private DefaultTableModel appointmentsTableModel;
+    private JTable inConsultationTable;
+    private DefaultTableModel inConsultationTableModel;
+    private JFrame parentFrame;
+
+    // Data and Control Classes
+    private ListInterface<Appointment> fullAppointmentList;
+    private ListInterface<Appointment> filteredTodaysList;
     private ListInterface<Patient> patientList;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Consultation> consultationList;
-    private JFrame parentFrame;
+    private ListInterface<Queue> queueList;
     private ReadWriteFile fileManager;
     private ConsultationControl consultationControl;
     private AppointmentControl appointmentControl;
+    private QueueControl queueControl;
 
     // UI Components for Search and Pagination
     private JTextField searchField = new JTextField(20);
@@ -49,26 +59,29 @@ public class ConsultationUI extends JFrame {
     private JComboBox<String> statusFilterComboBox = new JComboBox<>(new String[]{"All", "Scheduled", "Completed", "Canceled"});
     private JLabel pageLabel = new JLabel();
     private int currentPage = 1;
-    private final int ROWS_PER_PAGE = 5;
+    private final int ROWS_PER_PAGE = 10;
 
     private int lastSortedColumn = -1;
     private boolean isAscending = true;
 
-    public ConsultationUI(JFrame parent, ReadWriteFile fileManager, ListInterface<Appointment> appointments, ListInterface<Patient> patients, ListInterface<Doctor> doctors, ListInterface<Consultation> consultations) {
+    public ConsultationUI(JFrame parent, ReadWriteFile fileManager, ListInterface<Appointment> appointments, ListInterface<Patient> patients, ListInterface<Doctor> doctors, ListInterface<Consultation> consultations, ListInterface<Queue> queues) {
         this.fileManager = fileManager;
         this.parentFrame = parent;
-        this.fullTodayAppointmentList = appointments;
-        this.filteredAppointmentList = appointments;
+        this.fullAppointmentList = appointments;
+        this.filteredTodaysList = appointments;
         this.patientList = patients;
         this.doctorList = doctors;
         this.consultationList = consultations;
-        this.consultationControl = new ConsultationControl(appointments, consultations, fileManager);
+        this.queueList = queues;
+
+        this.queueControl = new QueueControl(queues);
+        this.consultationControl = new ConsultationControl(appointments, consultations, queues, fileManager);
         this.appointmentControl = new AppointmentControl(appointments, patients, doctors, fileManager);
 
-        // --- Frame Setup ---
+        // --- Frame Setup ---        
         setTitle("Consultation Management");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(900, 700);
+        setSize(1200, 800);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
         getContentPane().setBackground(new Color(245, 245, 245));
@@ -83,10 +96,13 @@ public class ConsultationUI extends JFrame {
         headerPanel.add(titleLabel);
         add(headerPanel, BorderLayout.NORTH);
 
-        // --- Main Content Panel (CENTER) ---
-        JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        contentPanel.setBackground(Color.WHITE);
+        // --- Main Content Panel (CENTER) ---        
+        JPanel mainContentPanel = new JPanel(new BorderLayout(10, 10));
+        mainContentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        mainContentPanel.setBackground(Color.WHITE);
+
+        // --- Left Panel for Appointments ---
+        JPanel leftPanel = new JPanel(new BorderLayout(10, 10));
 
         // --- Search Panel (NORTH of Content Panel) ---
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
@@ -99,37 +115,26 @@ public class ConsultationUI extends JFrame {
         searchPanel.add(statusFilterComboBox);
         JButton searchButton = new JButton("Search");
         searchPanel.add(searchButton);
-        contentPanel.add(searchPanel, BorderLayout.NORTH);
-        
+        leftPanel.add(searchPanel, BorderLayout.NORTH);
+
         JPanel tableAndPaginationPanel = new JPanel(new BorderLayout());
 
-//        // --- Table Panel ---
-//        JPanel tablePanel = new JPanel(new BorderLayout());
-//        tablePanel.setBorder(BorderFactory.createTitledBorder(
-//                BorderFactory.createLineBorder(Color.GRAY),
-//                " Today's Appointments ",
-//                TitledBorder.LEFT,
-//                TitledBorder.TOP,
-//                new Font("Arial", Font.BOLD, 16)
-//        ));
-//        tablePanel.setBackground(Color.WHITE);
-
-        String[] columnNames = {"ID", "Patient Name", "Doctor Name", "Time", "Status"};
-        tableModel = new DefaultTableModel(columnNames, 0) {
+        String[] appointmentColumnNames = {"ID", "Patient Name", "Doctor Name", "Time", "Status"};
+        appointmentsTableModel = new DefaultTableModel(appointmentColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
-        appointmentsTable = new JTable(tableModel);
+        appointmentsTable = new JTable(appointmentsTableModel);
         appointmentsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         appointmentsTable.setFont(new Font("Arial", Font.PLAIN, 14));
         appointmentsTable.setRowHeight(30);
 
-        JTableHeader header = appointmentsTable.getTableHeader();
-        header.setFont(new Font("Arial", Font.BOLD, 14));
-        header.setBackground(new Color(230, 230, 230));
-        header.setDefaultRenderer(new SortableHeaderRenderer(header.getDefaultRenderer()));
+        JTableHeader appointmentHeader = appointmentsTable.getTableHeader();
+        appointmentHeader.setFont(new Font("Arial", Font.BOLD, 14));
+        appointmentHeader.setBackground(new Color(230, 230, 230));
+        appointmentHeader.setDefaultRenderer(new SortableHeaderRenderer(appointmentHeader.getDefaultRenderer()));
         tableAndPaginationPanel.add(new JScrollPane(appointmentsTable), BorderLayout.CENTER);
 
         // --- Pagination Panel ---
@@ -140,17 +145,34 @@ public class ConsultationUI extends JFrame {
         paginationPanel.add(pageLabel);
         paginationPanel.add(nextButton);
         tableAndPaginationPanel.add(paginationPanel, BorderLayout.SOUTH);
-        
-        contentPanel.add(tableAndPaginationPanel, BorderLayout.CENTER);
-        
+        leftPanel.add(tableAndPaginationPanel, BorderLayout.CENTER);
+
+        // --- Right Panel for In-Consultation Queue ---
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBorder(BorderFactory.createTitledBorder("Currently Serving (Walk-in)"));
+        String[] queueColumnNames = {"Queue No.", "Patient Name", "Doctor"};
+        inConsultationTableModel = new DefaultTableModel(queueColumnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        inConsultationTable = new JTable(inConsultationTableModel);
+        rightPanel.add(new JScrollPane(inConsultationTable), BorderLayout.CENTER);
+
+        // --- Split Pane to hold both panels ---
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+        splitPane.setResizeWeight(0.75);
+        mainContentPanel.add(splitPane, BorderLayout.CENTER);
+
         // --- Actions Panel (SOUTH of Content Panel) ---
         JPanel actionsPanel = new JPanel(new GridLayout(3, 3, 10, 10));
         actionsPanel.setBorder(BorderFactory.createTitledBorder("Actions"));
         actionsPanel.setBackground(Color.WHITE);
-        
-        contentPanel.add(actionsPanel, BorderLayout.SOUTH);
-        
-        add(contentPanel, BorderLayout.CENTER);
+
+        mainContentPanel.add(actionsPanel, BorderLayout.SOUTH);
+
+        add(mainContentPanel, BorderLayout.CENTER);
 
         JButton btnStartConsultation = new JButton("Start Consultation");
         JButton btnBookNew = new JButton("Book New Appointment");
@@ -182,52 +204,68 @@ public class ConsultationUI extends JFrame {
         actionsPanel.add(btnViewHistory);
         actionsPanel.add(btnGenerateReport);
         actionsPanel.add(btnBack);
-        
-        add(contentPanel, BorderLayout.CENTER);
+
+        add(mainContentPanel, BorderLayout.CENTER);
 
         // --- Action Listeners ---
         searchButton.addActionListener(e -> performSearch());
         prevButton.addActionListener(e -> goToPreviousPage());
         nextButton.addActionListener(e -> goToNextPage());
-        header.addMouseListener(new MouseAdapter() {
+        appointmentHeader.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int col = appointmentsTable.columnAtPoint(e.getPoint());
                 sortAppointmentsByColumn(col);
             }
         });
-        
-        btnStartConsultation.addActionListener(e -> {
-            int selectedRow = appointmentsTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
-                Appointment selectedApp = appointmentControl.findAppointmentById(appointmentId);
-
-                if (selectedApp != null) {
-                    if (!selectedApp.getStatus().equals("Scheduled")) {
-                        JOptionPane.showMessageDialog(this, "Only 'Scheduled' appointments can be started.", "Action Not Allowed", JOptionPane.WARNING_MESSAGE);
-                        return;
-                    }
-                    // Open the details form, passing the control class
-                    new ConsultationDetailsUI(this, selectedApp, fileManager, consultationControl).setVisible(true);
+        appointmentsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent event) {
+                if (appointmentsTable.getSelectedRow() > -1) {
+                    inConsultationTable.clearSelection();
                 }
-            } else {
-                JOptionPane.showMessageDialog(this, "Please select an appointment to start.", "No Selection", JOptionPane.WARNING_MESSAGE);
             }
         });
 
+        inConsultationTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent event) {
+                if (inConsultationTable.getSelectedRow() > -1) {
+                    appointmentsTable.clearSelection();
+                }
+            }
+        });
+
+        //        btnStartConsultation.addActionListener(e -> {
+        //            int selectedRow = appointmentsTable.getSelectedRow();
+        //            if (selectedRow >= 0) {
+        //                String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
+        //                Appointment selectedApp = appointmentControl.findAppointmentById(appointmentId);
+        //
+        //                if (selectedApp != null) {
+        //                    if (!selectedApp.getStatus().equals("Scheduled")) {
+        //                        JOptionPane.showMessageDialog(this, "Only 'Scheduled' appointments can be started.", "Action Not Allowed", JOptionPane.WARNING_MESSAGE);
+        //                        return;
+        //                    }
+        //                    // Open the details form, passing the control class
+        //                    new ConsultationDetailsUI(this, selectedApp, fileManager, consultationControl).setVisible(true);
+        //                }
+        //            } else {
+        //                JOptionPane.showMessageDialog(this, "Please select an appointment to start.", "No Selection", JOptionPane.WARNING_MESSAGE);
+        //            }
+        //        });
+        btnStartConsultation.addActionListener(e -> startConsultationAction());
+
         btnBookNew.addActionListener(e -> {
-            new AppointmentFormUI(this, fileManager, patientList, doctorList, fullTodayAppointmentList).setVisible(true);
+            new AppointmentFormUI(this, fileManager, patientList, doctorList, fullAppointmentList).setVisible(true);
         });
 
         btnScheduleFollowUp.addActionListener(e -> {
             int selectedRow = appointmentsTable.getSelectedRow();
             if (selectedRow >= 0) {
-                String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
+                String appointmentId = (String) appointmentsTableModel.getValueAt(selectedRow, 0);
                 Appointment selectedApp = appointmentControl.findAppointmentById(appointmentId);
                 if (selectedApp != null) {
                     // Open form in "Follow-up" mode with patient and doctor pre-filled
-                    new AppointmentFormUI(this, fileManager, selectedApp.getPatient(), selectedApp.getDoctor(), patientList, doctorList, fullTodayAppointmentList).setVisible(true);
+                    new AppointmentFormUI(this, fileManager, selectedApp.getPatient(), selectedApp.getDoctor(), patientList, doctorList, fullAppointmentList).setVisible(true);
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Please select an appointment to schedule a follow-up.", "No Selection", JOptionPane.WARNING_MESSAGE);
@@ -235,19 +273,19 @@ public class ConsultationUI extends JFrame {
         });
 
         btnManageAppointments.addActionListener(e -> {
-            new ManageAppointmentUI(this, this, fullTodayAppointmentList, patientList, doctorList, fileManager).setVisible(true);
+            new ManageAppointmentUI(this, this, fullAppointmentList, patientList, doctorList, fileManager).setVisible(true);
             this.setVisible(false);
         });
 
         btnManageConsultations.addActionListener(e -> {
-            new ManageConsultationUI(this, this, consultationList, fullTodayAppointmentList, fileManager).setVisible(true);
+            new ManageConsultationUI(this, this, consultationList, fullAppointmentList, queueList, fileManager).setVisible(true);
             this.setVisible(false);
         });
 
         btnCancelAppointment.addActionListener(e -> {
             int selectedRow = appointmentsTable.getSelectedRow();
             if (selectedRow >= 0) {
-                String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
+                String appointmentId = (String) appointmentsTableModel.getValueAt(selectedRow, 0);
                 Appointment selectedApp = appointmentControl.findAppointmentById(appointmentId);
 
                 int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to cancel this appointment?", "Confirm Cancellation", JOptionPane.YES_NO_OPTION);
@@ -281,7 +319,48 @@ public class ConsultationUI extends JFrame {
             this.dispose();
         });
 
-        updateTable();
+        performSearch(); // Initial load of today's appointments
+        updateInConsultationTable(); // Initial load of queue table
+    }
+
+    private void startConsultationAction() {
+        int appointmentRow = appointmentsTable.getSelectedRow();
+        int queueRow = inConsultationTable.getSelectedRow();
+
+        if (appointmentRow > -1) {
+            // --- Handle Scheduled Appointment ---
+            int actualIndex = ((currentPage - 1) * ROWS_PER_PAGE) + appointmentRow + 1;
+            Appointment selectedApp = filteredTodaysList.getEntry(actualIndex);
+            
+            if (selectedApp != null) {
+                if (queueControl.isDoctorBusyWithQueue(selectedApp.getDoctor())) {
+                    JOptionPane.showMessageDialog(this, "Dr. " + selectedApp.getDoctor().getName() + " is currently busy with a walk-in patient.", "Doctor Unavailable", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                if (!selectedApp.getStatus().equals("Scheduled")) {
+                    JOptionPane.showMessageDialog(this, "Only 'Scheduled' appointments can be started.", "Action Not Allowed", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                // Open the details form for an Appointment
+                new ConsultationDetailsUI(this, selectedApp, consultationControl, queueControl).setVisible(true);
+            }
+        } else if (queueRow > -1) {
+            // --- Handle Walk-in Queue Patient ---
+            ListInterface<Queue> inConsultationList = queueControl.getInConsultationQueue();
+            Queue selectedQueue = inConsultationList.getEntry(queueRow + 1);
+            
+            if (selectedQueue != null) {
+                // Open the details form for a Queue item
+                new ConsultationDetailsUI(this, selectedQueue, consultationControl, queueControl).setVisible(true);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select an appointment or a walk-in patient to start a consultation.", "No Selection", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    public void refreshTable() {
+        performSearch();
+        updateInConsultationTable();
     }
 
     public void performSearch() {
@@ -290,17 +369,17 @@ public class ConsultationUI extends JFrame {
         String statusFilter = (String) statusFilterComboBox.getSelectedItem();
 
         // The UI now calls the control class to do all the filtering work.
-        filteredAppointmentList = appointmentControl.filterTodaysAppointments(searchText, searchBy, statusFilter);
+        filteredTodaysList = appointmentControl.filterTodaysAppointments(searchText, searchBy, statusFilter);
         lastSortedColumn = -1;
         isAscending = true;
         currentPage = 1; // Reset to the first page after every search
-        
+
         updateTable();
     }
 
     private void updateTable() {
-        tableModel.setRowCount(0);
-        int totalRows = filteredAppointmentList.getLength();
+        appointmentsTableModel.setRowCount(0);
+        int totalRows = filteredTodaysList.getLength();
         int totalPages = (int) Math.ceil((double) totalRows / ROWS_PER_PAGE);
         if (totalPages == 0) {
             totalPages = 1;
@@ -312,13 +391,25 @@ public class ConsultationUI extends JFrame {
 
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm a");
         for (int i = startRow + 1; i <= endRow; i++) {
-            Appointment app = filteredAppointmentList.getEntry(i);
-            tableModel.addRow(new Object[]{
+            Appointment app = filteredTodaysList.getEntry(i);
+            appointmentsTableModel.addRow(new Object[]{
                 app.getAppointmentID(),
                 app.getPatient().getName(),
                 app.getDoctor().getName(),
                 app.getAppointmentTime().format(timeFormatter),
                 app.getStatus()
+            });
+        }
+    }
+
+    private void updateInConsultationTable() {
+        inConsultationTableModel.setRowCount(0);
+        ListInterface<Queue> inConsultationList = queueControl.getInConsultationQueue();
+        Iterator<Queue> it = inConsultationList.getIterator();
+        while (it.hasNext()) {
+            Queue q = it.next();
+            inConsultationTableModel.addRow(new Object[]{
+                q.getQueueNumber(), q.getPatient().getName(), q.getDoctor().getName()
             });
         }
     }
@@ -331,7 +422,7 @@ public class ConsultationUI extends JFrame {
     }
 
     private void goToNextPage() {
-        int totalRows = filteredAppointmentList.getLength();
+        int totalRows = filteredTodaysList.getLength();
         int totalPages = (int) Math.ceil((double) totalRows / ROWS_PER_PAGE);
         if (currentPage < totalPages) {
             currentPage++;
@@ -366,9 +457,9 @@ public class ConsultationUI extends JFrame {
         }
 
         if (isAscending) {
-            filteredAppointmentList.sort(comparator);
+            filteredTodaysList.sort(comparator);
         } else {
-            filteredAppointmentList.sortDescending(comparator);
+            filteredTodaysList.sortDescending(comparator);
         }
 
         updateTable();

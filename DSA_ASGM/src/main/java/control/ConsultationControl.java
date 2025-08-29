@@ -8,7 +8,9 @@ import adt.ListInterface;
 import adt.DoublyLinkedList;
 import entity.Appointment;
 import entity.Consultation;
+import entity.Queue;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Iterator;
 import utility.ReadWriteFile;
 
@@ -20,11 +22,13 @@ public class ConsultationControl {
 
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
+    private ListInterface<Queue> queueList;
     private ReadWriteFile fileManager;
 
-    public ConsultationControl(ListInterface<Appointment> appList, ListInterface<Consultation> conList, ReadWriteFile fileManager) {
+    public ConsultationControl(ListInterface<Appointment> appList, ListInterface<Consultation> conList, ListInterface<Queue> qList, ReadWriteFile fileManager) {
         this.appointmentList = appList;
         this.consultationList = conList;
+        this.queueList = qList;
         this.fileManager = fileManager;
 
     }
@@ -36,6 +40,49 @@ public class ConsultationControl {
 
     public ListInterface<Consultation> getConsultationList() {
         return consultationList;
+    }
+    
+    /**
+     * Saves a new consultation record for a scheduled appointment.
+     */
+    public String saveAppointmentConsultation(Appointment appointment, String diagnosis, String notes) {
+        if (diagnosis == null || diagnosis.trim().isEmpty()) {
+            return "Error: Diagnosis cannot be empty.";
+        }
+        String newId = generateNewConsultationId();
+        Consultation newConsultation = new Consultation(newId, appointment, diagnosis, notes, LocalDate.now());
+        consultationList.add(newConsultation);
+        appointment.setStatus("Completed");
+        
+        // Save both files
+        fileManager.writeConsultationsToFile("consultations.txt", consultationList);
+        fileManager.writeAppointmentsToFile("appointments.txt", appointmentList);
+
+        return "Success: Consultation " + newId + " saved successfully!";
+    }
+
+    /**
+     * Saves a new consultation record for a walk-in patient from the queue.
+     */
+    public String saveWalkInConsultation(Queue queue, String diagnosis, String notes) {
+        if (diagnosis == null || diagnosis.trim().isEmpty()) {
+            return "Error: Diagnosis cannot be empty.";
+        }
+        String newId = generateNewConsultationId();
+        // Use the walk-in constructor for the Consultation entity
+        Consultation newConsultation = new Consultation(newId, queue.getPatient(), queue.getDoctor(), diagnosis, notes, LocalDate.now());
+        consultationList.add(newConsultation);
+
+        // --- NEW LOGIC ---
+        // Update the queue item's status and exit time
+        queue.setStatus("Completed");
+        queue.setExitTime(LocalTime.now());
+        
+        // Save both the consultation and the updated queue files
+        fileManager.writeConsultationsToFile("consultations.txt", consultationList);
+        fileManager.writeQueuesToFile("queues.txt", queueList);
+
+        return "Success: Consultation " + newId + " for walk-in patient saved successfully!";
     }
 
     /**

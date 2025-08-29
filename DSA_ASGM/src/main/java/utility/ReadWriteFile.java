@@ -133,7 +133,7 @@ public class ReadWriteFile {
                 int queueId = Integer.parseInt(data[0]);
                 int queueNumber = Integer.parseInt(data[1]);
                 Patient patient = findPatientById(patientList, data[2]);
-                Doctor doctor = data[3].equals("N/A") ? null : findDoctorById(doctorList, data[2]);
+                Doctor doctor = data[3].equals("N/A") ? null : findDoctorById(doctorList, data[3]);
                 LocalTime entryTime = LocalTime.parse(data[4]);
                 LocalTime exitTime = data[5].equals("N/A") ? null : LocalTime.parse(data[4]);
                 String status = data[6];

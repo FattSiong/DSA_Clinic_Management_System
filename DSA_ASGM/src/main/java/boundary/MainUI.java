@@ -16,6 +16,7 @@ import entity.Schedule;
 import entity.Consultation;
 import entity.Treatment;
 import entity.Appointment;
+import entity.Queue;
 import utility.ReadWriteFile;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -33,6 +34,7 @@ public class MainUI extends JFrame {
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
     private ListInterface<Treatment> treatmentList;
+    private ListInterface<Queue> queueList;
    
     private static ReadWriteFile fileManager = new ReadWriteFile();
 
@@ -40,7 +42,7 @@ public class MainUI extends JFrame {
             ListInterface<Patient> patientList, ListInterface<Doctor> doctorList,
             ListInterface<Medicine> medicineList, ListInterface<Schedule> scheduleList,
             ListInterface<Appointment> appointmentList, ListInterface<Consultation> consultationList,
-            ListInterface<Treatment> treatmentList) {
+            ListInterface<Treatment> treatmentList, ListInterface<Queue> queueList) {
 
         this.patientList = patientList;
         this.doctorList = doctorList;
@@ -49,6 +51,7 @@ public class MainUI extends JFrame {
         this.appointmentList = appointmentList;
         this.consultationList = consultationList;
         this.treatmentList = treatmentList;
+        this.queueList = queueList;
 
         // --- Frame Setup ---
         setTitle("TAR UMT Clinic Management System");
@@ -109,7 +112,7 @@ public class MainUI extends JFrame {
         });
 
         btnConsultation.addActionListener(e -> {
-            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList).setVisible(true);
+            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList).setVisible(true);
             this.setVisible(false);
         });
 
