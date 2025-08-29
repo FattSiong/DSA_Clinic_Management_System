@@ -154,7 +154,7 @@ public class ReadWriteFile {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
-                doctorList.add(new Doctor(data[0], data[1], data[2], data[3], data[4]));
+                doctorList.add(new Doctor(data[0], data[1], data[2], data[3]));
             }
         } catch (IOException e) {
             System.err.println("Error reading doctors file: " + e.getMessage());
@@ -308,7 +308,7 @@ public class ReadWriteFile {
             Iterator<Doctor> it = doctorList.getIterator();
             while (it.hasNext()) {
                 Doctor d = it.next();
-                String line = String.join("|", d.getDoctorID(), d.getName(), d.getSpecialization(), d.getContactNumber(), d.getRoomNumber());
+                String line = String.join("|", d.getDoctorID(), d.getName(), d.getContactNumber(), d.getRoomNumber());
                 writer.write(line);
                 writer.newLine();
             }
