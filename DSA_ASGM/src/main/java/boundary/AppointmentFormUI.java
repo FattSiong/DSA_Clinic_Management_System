@@ -9,6 +9,7 @@ import control.AppointmentControl;
 import entity.Appointment;
 import entity.Doctor;
 import entity.Patient;
+import control.PatientControl;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
@@ -25,6 +26,10 @@ import utility.ReadWriteFile;
 public class AppointmentFormUI extends JFrame {
 
     // UI Components
+    private JTextField patientIcField = new JTextField(15);
+    private JButton findPatientButton = new JButton("Find");
+    private JTextField patientNameField = new JTextField(20);
+    
     private JComboBox<String> patientComboBox = new JComboBox<>();
     private JComboBox<String> doctorComboBox = new JComboBox<>();
     private JComboBox<Integer> dayComboBox = new JComboBox<>();
@@ -32,12 +37,15 @@ public class AppointmentFormUI extends JFrame {
     private JComboBox<Integer> yearComboBox = new JComboBox<>();
     private JTextField dateField = new JTextField(10);
     private JComboBox<String> timeSlotComboBox = new JComboBox<>();
+    private JButton saveButton = new JButton("Save Appointment");
 
-    // Data lists from the main application
+    // --- Data and Control ---
+    private Patient selectedPatient = null;
     private ListInterface<Patient> patientList;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Appointment> appointmentList;
     private AppointmentControl appointmentControl;
+    private PatientControl patientControl;
     private ReadWriteFile fileManager;
     private ConsultationUI parentUI; // To call the refresh method
 
@@ -48,11 +56,11 @@ public class AppointmentFormUI extends JFrame {
         this.parentUI = parent;
         this.fileManager = fileManager;
         this.appointmentList = aList;
-        this.appointmentControl = new AppointmentControl(aList, pList, dList); // Initialize control class
+        this.appointmentControl = new AppointmentControl(aList, pList, dList, fileManager); // Initialize control class
+        this.patientControl = new PatientControl(pList);
         
-        initUI();
+        initUI(true);
         setTitle("Book New Appointment");
-        populatePatientComboBox(pList);
         populateDoctorComboBox(dList);
     }
 
@@ -63,29 +71,44 @@ public class AppointmentFormUI extends JFrame {
         this.parentUI = parent;
         this.fileManager = fileManager;
         this.appointmentList = aList;
-        this.appointmentControl = new AppointmentControl(aList, pList, dList);  // Control class for follow-up
+        this.appointmentControl = new AppointmentControl(aList, pList, dList, fileManager);  // Control class for follow-up
+        this.patientControl = new PatientControl(pList);
         
-        initUI();
+        initUI(false);
         setTitle("Schedule Follow-up for " + patient.getName());
         
-        patientComboBox.addItem(patient.getName() + " (" + patient.getPatientID() + ")");
-        patientComboBox.setEnabled(false);
+        this.selectedPatient = patient;
+        patientIcField.setText(patient.getIcNumber());
+        patientIcField.setEditable(false);
+        findPatientButton.setEnabled(false);
+        patientNameField.setText(patient.getName());
+        
         doctorComboBox.addItem(doctor.getName() + " (" + doctor.getDoctorID() + ")");
         doctorComboBox.setEnabled(false);
     }
 
-    private void initUI() {
+    private void initUI(boolean isNewAppointment) {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(500, 350);
         setLocationRelativeTo(parentUI);
         setLayout(new BorderLayout(10, 10));
 
         // --- Form Panel ---
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
         formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        formPanel.add(new JLabel("Patient:"));
-        formPanel.add(patientComboBox);
+        JPanel patientSearchPanel = new JPanel(new BorderLayout(5, 0));
+        patientSearchPanel.add(patientIcField, BorderLayout.CENTER);
+        patientSearchPanel.add(findPatientButton, BorderLayout.EAST);
+        
+        formPanel.add(new JLabel("Patient IC Number:"));
+        formPanel.add(patientSearchPanel);
+
+        formPanel.add(new JLabel("Patient Name:"));
+        patientNameField.setEditable(false);
+        patientNameField.setBackground(new Color(230, 230, 230));
+        formPanel.add(patientNameField);
+        
         formPanel.add(new JLabel("Doctor:"));
         formPanel.add(doctorComboBox);
         
@@ -105,7 +128,6 @@ public class AppointmentFormUI extends JFrame {
 
         // --- Button Panel ---
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton saveButton = new JButton("Save Appointment");
         JButton cancelButton = new JButton("Cancel");
         buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
@@ -114,17 +136,42 @@ public class AppointmentFormUI extends JFrame {
         add(buttonPanel, BorderLayout.SOUTH);
 
         // --- Action Listeners ---
+        findPatientButton.addActionListener(e -> findPatient());
         saveButton.addActionListener(e -> saveAppointment());
         cancelButton.addActionListener(e -> dispose());
         
         // Listeners to update days when month/year changes
         monthComboBox.addActionListener(e -> updateDays());
         yearComboBox.addActionListener(e -> updateDays());
+        
+        // Initially disable save button until a patient is found
+        if (isNewAppointment) {
+            saveButton.setEnabled(false);
+        }
+    }
+    
+     private void findPatient() {
+        String ic = patientIcField.getText();
+        selectedPatient = patientControl.findPatientByIc(ic);
+
+        if (selectedPatient != null) {
+            patientNameField.setText(selectedPatient.getName());
+            saveButton.setEnabled(true); // Enable save button
+        } else {
+            patientNameField.setText("");
+            saveButton.setEnabled(false); // Disable save button
+            JOptionPane.showMessageDialog(this, "Patient with IC number '" + ic + "' not found.", "Not Found", JOptionPane.WARNING_MESSAGE);
+        }
     }
 
     private void saveAppointment() {
+        if (selectedPatient == null) {
+            JOptionPane.showMessageDialog(this, "Please find and select a patient first.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
         // 1. Get raw data from the form
-        String patientId = getSelectedIdFromComboBox(patientComboBox);
+        String patientId = selectedPatient.getPatientID();
         String doctorId = getSelectedIdFromComboBox(doctorComboBox);
         LocalDate date;
         try {
@@ -143,9 +190,8 @@ public class AppointmentFormUI extends JFrame {
 
         // 3. Display the result
         if (result.startsWith("Success")) {
-            fileManager.writeAppointmentsToFile("src/main/java/Data File/appointments", appointmentList);
             JOptionPane.showMessageDialog(this, result);
-            parentUI.refreshTable();
+            parentUI.performSearch();
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, result, "Booking Error", JOptionPane.ERROR_MESSAGE);

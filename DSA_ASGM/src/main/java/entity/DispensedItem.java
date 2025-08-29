@@ -48,7 +48,11 @@ public class DispensedItem implements Comparable<DispensedItem> {
 
     @Override
     public String toString() {
-        return String.format("%-5s |  - %-25s | Qty: %-4d | Subtotal: $%.2f",
-                getRecordId(), medicine.getName(), quantityDispensed, getSubtotal());
+        return String.format("%s | - %s | Qty: %d | Subtotal: $%.2f",
+                this.medicine.getDescription(),
+                this.medicine.getName(),
+                this.getQuantityDispensed(),
+                this.getSubtotal()
+        );
     }
 }

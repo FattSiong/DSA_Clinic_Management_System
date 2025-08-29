@@ -22,6 +22,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Iterator;
 
@@ -275,37 +276,41 @@ public class ReadWriteFile {
         }
     }
 
-    public void readDispensingRecordFromFile(String filename, ListInterface<DispensingRecord> dispensingRecordList, ListInterface<Medicine> medicineList) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length < 5) {
-                    continue; //skip incompleted lines
-                }
-                String recordId = data[0];
-                String patientName = data[1];
-                String doctorName = data[2];
+public void readDispensingRecordFromFile(String filename, ListInterface<DispensingRecord> dispensingRecordList, ListInterface<Medicine> medicineList) {
+    try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] data = line.split("\\|");
+            if (data.length < 6) {
+                continue;
+            }
+            String recordId = data[0];
+            String patientName = data[1];
+            String doctorName = data[2];
 
-                DispensingRecord record = new DispensingRecord(recordId, patientName, doctorName);
+            DispensingRecord record = new DispensingRecord(recordId, patientName, doctorName);
+            
+            record.setDispensingDateTime(LocalDateTime.parse(data[3]));
 
-                String[] itemsData = data[4].split(".");
-                for (String itemStr : itemsData) {
-                    String[] itemParts = itemStr.split(":");
-                    if (itemParts.length == 2) {
-                        Medicine medicine = findMedicineById(medicineList, itemParts[0]);
-                        int quantity = Integer.parseInt(itemParts[1]);
-                        if (medicine != null) {
-                            record.addItem(new DispensedItem(medicine, quantity));
-                        }
+            String[] itemsData = data[4].split(",");
+            for (String itemStr : itemsData) {
+                if (itemStr.isEmpty()) continue;
+                String[] itemParts = itemStr.split(":");
+                if (itemParts.length == 2) {
+                    Medicine medicine = findMedicineById(medicineList, itemParts[0]);
+                    int quantity = Integer.parseInt(itemParts[1]);
+                    if (medicine != null) {
+                        // This will now correctly calculate the total from zero
+                        record.addItem(new DispensedItem(medicine, quantity));
                     }
                 }
-                dispensingRecordList.add(record);
             }
-        } catch (IOException | NumberFormatException e) {
-            System.err.println("Error reading dispensing records file : " + e.getMessage());
+            dispensingRecordList.add(record);
         }
+    } catch (IOException | NumberFormatException e) {
+        System.err.println("Error reading dispensing records file : " + e.getMessage());
     }
+}
 
     // --- WRITE Methods ---
     public static void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
@@ -461,21 +466,23 @@ public class ReadWriteFile {
                 DispensingRecord rec = it.next();
                 
                 StringBuilder itemsStr = new StringBuilder();
-                Iterator<DispensedItem> itemIt = rec.getDispensedItems().getIterator();
-                while(itemIt.hasNext()){
-                    DispensedItem item = itemIt.next();
-                    itemsStr.append(item.getMedicine().getMedicineID())
-                            .append(":")
-                            .append(item.getQuantityDispensed());
-                    if(itemIt.hasNext()){
-                        itemsStr.append(",");
+                if (rec.getDispensedItems() != null) { // Defensive check
+                    Iterator<DispensedItem> itemIt = rec.getDispensedItems().getIterator();
+                    while(itemIt.hasNext()){
+                        DispensedItem item = itemIt.next();
+                        itemsStr.append(item.getMedicine().getMedicineID())
+                                .append(":")
+                                .append(item.getQuantityDispensed());
+                        if(itemIt.hasNext()){
+                            itemsStr.append(",");
+                        }
                     }
                 }
                 
                 String line = String.join("|",
                         rec.getRecordId(),
-                        "PatientNamePlaceholder",
-                        "DoctorNamePlaceholder",
+                        rec.getPatientName(),
+                        rec.getDoctorName(), // FIX: Was writing patient name twice
                         rec.getDispensingDateTime().toString(),
                         itemsStr.toString(),
                         String.valueOf(rec.getTotalAmount())

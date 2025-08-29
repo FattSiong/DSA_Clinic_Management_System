@@ -15,8 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.Objects;
 import entity.DispensedItem;
-import entity.Doctor;
-import entity.Patient;
 
 public class DispensingRecord implements Comparable<DispensingRecord> {
 
@@ -32,6 +30,7 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
         this.patientName = patientName;
         this.doctorName = doctorName;
         this.dispensingDateTime = LocalDateTime.now();
+        this.dispensedItems = new DoublyLinkedList<>();
         this.totalAmount = 0.0;
     }
 
@@ -46,6 +45,14 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
         return recordId;
     }
 
+    public String getPatientName() {
+        return patientName;
+    }
+
+    public String getDoctorName() {
+        return doctorName;
+    }
+
     public LocalDateTime getDispensingDateTime() {
         return dispensingDateTime;
     }
@@ -56,6 +63,31 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
 
     public ListInterface<DispensedItem> getDispensedItems() {
         return dispensedItems;
+    }
+
+    //Setters
+    public void setRecordId(String recordId) {
+        this.recordId = recordId;
+    }
+    
+    public void setPatientName(String patientName) {
+        this.patientName = patientName;
+    }
+    
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
+    
+    public void setDispensingDateTime(LocalDateTime dispensingDateTime) {
+        this.dispensingDateTime = dispensingDateTime;
+    }
+    
+    public void setDispensedItems(ListInterface dispensedItems) {
+        this.dispensedItems = dispensedItems;
+    }
+    
+    public void setTotalAmount(double totalAmount) {
+        this.totalAmount = totalAmount;
     }
 
     @Override

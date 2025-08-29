@@ -20,6 +20,7 @@ import entity.DispensedItem;
 import entity.DispensingRecord;
 import utility.ReadWriteFile;
 import entity.Queue;
+import utility.ReadWriteFile;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -127,7 +128,7 @@ public class MainUI extends JFrame {
         });
 
         btnPharmacy.addActionListener(e -> {
-            new PharmacyUI(this, dispensingRecordList).setVisible(true);
+            new PharmacyUI(this, dispensingRecordList, medicineList, patientList, doctorList).setVisible(true);
             this.setVisible(false);
         });
 
