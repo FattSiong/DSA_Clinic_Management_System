@@ -23,6 +23,7 @@ import javax.swing.RowFilter;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.TableRowSorter;
+import utility.ShowMessage;
 
 /**
  *
@@ -158,7 +159,6 @@ public class PatientListUI extends javax.swing.JFrame {
         }
     }
 
-    // This action is triggered by the button in the "Queue Action" column
     Action queueAction = new AbstractAction() {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -169,10 +169,10 @@ public class PatientListUI extends javax.swing.JFrame {
             if (patient != null) {
                 if (queueControl.isPatientInQueue(patient)) {
                     // If patient is in queue, confirm and then dequeue
-                    int response = JOptionPane.showConfirmDialog(
+                    int response = ShowMessage.showConfirm(
                             tblPatient,
                             "Are you sure you want to remove " + patient.getName() + " from the queue?",
-                            "Confirm Dequeue", JOptionPane.YES_NO_OPTION);
+                            "Confirm Dequeue");
                     if (response == JOptionPane.YES_OPTION) {
                         queueControl.dequeuePatient(patient);
                     }
@@ -180,7 +180,6 @@ public class PatientListUI extends javax.swing.JFrame {
                     // If patient is not in queue, enqueue them
                     queueControl.enqueuePatient(patient);
                 }
-                // Refresh the table to show the updated button text
                 populateTable();
             }
         }
@@ -202,8 +201,8 @@ public class PatientListUI extends javax.swing.JFrame {
         btnQueue = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         txtSearch = new javax.swing.JTextField();
-        btnReport = new javax.swing.JButton();
         cmbReport = new javax.swing.JComboBox<>();
+        btnReport = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -259,14 +258,14 @@ public class PatientListUI extends javax.swing.JFrame {
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
         jLabel1.setText("Search:");
 
+        cmbReport.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "PATIENT DEMOGRAPHICS REPORT", "OVERALL CLINIC PEAK HOURS REPORT" }));
+
         btnReport.setText("Report");
         btnReport.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnReportActionPerformed(evt);
             }
         });
-
-        cmbReport.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "PATIENT DEMOGRAPHICS REPORT", "OVERALL CLINIC PEAK HOURS REPORT" }));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -309,8 +308,8 @@ public class PatientListUI extends javax.swing.JFrame {
                     .addComponent(btnAdd)
                     .addComponent(btnQueue)
                     .addComponent(btnDelete)
-                    .addComponent(btnReport)
-                    .addComponent(cmbReport, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(cmbReport, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnReport))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -329,15 +328,13 @@ public class PatientListUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnAddActionPerformed
 
     private void btnQueueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQueueActionPerformed
-        // This button now opens the main queue control panel
-        // It's important that only ONE instance of QueueControl is used across the app
         new QueueControlUI(this.queueControl).setVisible(true);
     }//GEN-LAST:event_btnQueueActionPerformed
 
     private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
         int viewRow = tblPatient.getSelectedRow();
         if (viewRow == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a patient to delete.", "No Patient Selected", JOptionPane.INFORMATION_MESSAGE);
+            ShowMessage.showInfo(this, "Please select a patient to delete.", "No Patient Selected");
             return;
         }
 
@@ -345,9 +342,9 @@ public class PatientListUI extends javax.swing.JFrame {
         String patientId = (String) tblPatient.getModel().getValueAt(modelRow, 0);
         String patientName = (String) tblPatient.getModel().getValueAt(modelRow, 1);
 
-        int response = JOptionPane.showConfirmDialog(this,
+        int response = ShowMessage.showConfirm(this,
                 "Are you sure you want to permanently delete " + patientName + "?\nThis also removes them from the queue.",
-                "Confirm Deletion", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                "Confirm Deletion");
 
         if (response == JOptionPane.YES_OPTION) {
             Patient patientToDelete = patientControl.findPatientById(patientId);
@@ -356,20 +353,18 @@ public class PatientListUI extends javax.swing.JFrame {
             }
 
             if (patientControl.deletePatient(patientId)) {
-                JOptionPane.showMessageDialog(this, "Patient " + patientName + " has been deleted.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                ShowMessage.showSuccess(this, "Patient " + patientName + " has been deleted.");
                 populateTable();
             } else {
-                JOptionPane.showMessageDialog(this, "Error: Could not delete the patient.", "Deletion Failed", JOptionPane.ERROR_MESSAGE);
+                ShowMessage.showError(this, "Error: Could not delete the patient.");
             }
         }
     }//GEN-LAST:event_btnDeleteActionPerformed
 
     private void btnReportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReportActionPerformed
         String selectedReport = (String) cmbReport.getSelectedItem();
-
-        // 2. Create a new instance of your PatientReportUI, passing it the
-        //    selected report type and the necessary data controllers.
-        new PatientReportUI(selectedReport, patientControl, queueControl).setVisible(true);    }//GEN-LAST:event_btnReportActionPerformed
+        new PatientReportUI(selectedReport, patientControl, queueControl).setVisible(true);
+    }//GEN-LAST:event_btnReportActionPerformed
 
     /**
      * @param args the command line arguments
