@@ -4,12 +4,15 @@
  */
 package boundary;
 
+import adt.DoublyLinkedList;
 import adt.ListInterface;
 import java.util.Iterator;
 import entity.Patient;
 import control.PatientControl;
 import control.QueueControl;
 import utility.ButtonColumn;
+import utility.PatientComparators;
+import utility.ShowMessage;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -19,11 +22,6 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.RowFilter;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.table.TableRowSorter;
-import utility.ShowMessage;
 
 /**
  *
@@ -35,14 +33,11 @@ public class PatientListUI extends javax.swing.JFrame {
 
     private PatientControl patientControl;
     private QueueControl queueControl;
-    private TableRowSorter<DefaultTableModel> sorter;
 
     /**
      * Creates new form PatientListUI
      */
     public PatientListUI() {
-        // It's better to pass the controllers in if this UI is opened from a main menu
-        // For now, we instantiate them here.
         this.patientControl = new PatientControl();
         this.queueControl = new QueueControl();
 
@@ -51,7 +46,6 @@ public class PatientListUI extends javax.swing.JFrame {
         setupEventListeners();
     }
 
-    // Constructor to be used if opened from a main application window
     public PatientListUI(PatientControl patientControl, QueueControl queueControl) {
         this.patientControl = patientControl;
         this.queueControl = queueControl;
@@ -61,36 +55,7 @@ public class PatientListUI extends javax.swing.JFrame {
         setupEventListeners();
     }
 
-    private void setupTable() {
-        populateTable();
-        // Setup the button column for queue actions
-        ButtonColumn buttonColumn = new ButtonColumn(tblPatient, queueAction, 8);
-        // Setup the sorter for the search functionality
-        DefaultTableModel model = (DefaultTableModel) tblPatient.getModel();
-        sorter = new TableRowSorter<>(model);
-        tblPatient.setRowSorter(sorter);
-    }
-
     private void setupEventListeners() {
-        // Listener for the search text field
-        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                filterTable();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                filterTable();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                filterTable();
-            }
-        });
-
-        // Listener for double-click to edit a patient
         tblPatient.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -100,7 +65,6 @@ public class PatientListUI extends javax.swing.JFrame {
             }
         });
 
-        // Listener to refresh the table when the window becomes active
         this.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowActivated(java.awt.event.WindowEvent e) {
@@ -109,24 +73,28 @@ public class PatientListUI extends javax.swing.JFrame {
         });
     }
 
-    private void filterTable() {
-        String searchText = txtSearch.getText();
-        if (searchText.trim().length() == 0) {
-            sorter.setRowFilter(null);
-        } else {
-            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
-        }
+    private void setupTable() {
+        patientControl.getPatientList().sort(new PatientComparators.SortById());
+        populateTable();
+
+        ButtonColumn buttonColumn = new ButtonColumn(tblPatient, queueAction, 8);
     }
 
     private void populateTable() {
+        populateTable(patientControl.getPatientList());
+    }
+
+    private void populateTable(ListInterface<Patient> patientsToDisplay) {
         DefaultTableModel model = (DefaultTableModel) tblPatient.getModel();
         model.setRowCount(0);
 
-        ListInterface<Patient> patientList = patientControl.getPatientList();
-        Iterator<Patient> iterator = patientList.getIterator();
+        if (patientsToDisplay == null || patientsToDisplay.isEmpty()) {
+            return;
+        }
+
+        Iterator<Patient> iterator = patientsToDisplay.getIterator();
         while (iterator.hasNext()) {
             Patient patient = iterator.next();
-            // Use the new method from QueueControl to check the patient's status
             String queueStatus = queueControl.isPatientInQueue(patient) ? "Dequeue" : "Add to Queue";
             Object[] rowData = {
                 patient.getPatientID(), patient.getName(), patient.getGender(),
@@ -168,7 +136,6 @@ public class PatientListUI extends javax.swing.JFrame {
 
             if (patient != null) {
                 if (queueControl.isPatientInQueue(patient)) {
-                    // If patient is in queue, confirm and then dequeue
                     int response = ShowMessage.showConfirm(
                             tblPatient,
                             "Are you sure you want to remove " + patient.getName() + " from the queue?",
@@ -177,13 +144,98 @@ public class PatientListUI extends javax.swing.JFrame {
                         queueControl.dequeuePatient(patient);
                     }
                 } else {
-                    // If patient is not in queue, enqueue them
                     queueControl.enqueuePatient(patient);
                 }
                 populateTable();
             }
         }
     };
+
+    private void performSearch() {
+        String searchTerm = txtSearch.getText().trim();
+        String searchBy = (String) cmbSearch.getSelectedItem();
+
+        if (searchTerm.isEmpty()) {
+            populateTable();
+            return;
+        }
+
+        ListInterface<Patient> results = new DoublyLinkedList<>();
+
+        switch (searchBy) {
+            case "ID":
+                Patient foundById = patientControl.findPatientByIdBinarySearch(searchTerm);
+                if (foundById != null) {
+                    results.add(foundById);
+                }
+                break;
+
+            case "Name":
+                results = patientControl.findPatientsByName(searchTerm);
+                break;
+
+            case "Age":
+                try {
+                    int searchAge = Integer.parseInt(searchTerm);
+                    results = patientControl.findPatientsByAge(searchAge);
+                } catch (NumberFormatException e) {
+                    ShowMessage.showError(this, "Please enter a valid number for age.");
+                }
+                break;
+
+            case "IC Number":
+                Patient foundByIc = patientControl.findPatientByIc(searchTerm);
+                if (foundByIc != null) {
+                    results.add(foundByIc);
+                }
+                break;
+
+            case "Contact Number":
+                Patient foundByContact = patientControl.findPatientByPhoneNumber(searchTerm);
+                if (foundByContact != null) {
+                    results.add(foundByContact);
+                }
+                break;
+
+            case "Email":
+                Patient foundByEmail = patientControl.findPatientByEmail(searchTerm);
+                if (foundByEmail != null) {
+                    results.add(foundByEmail);
+                }
+                break;
+        }
+
+        populateTable(results);
+
+        if (results.isEmpty()) {
+            ShowMessage.showInfo(this, "No patients found matching your criteria.", "Search Results");
+        }
+    }
+
+    private void performSort() {
+        String sortBy = (String) cmbSort.getSelectedItem();
+
+        DefaultTableModel model = (DefaultTableModel) tblPatient.getModel();
+        ListInterface<Patient> currentList = new DoublyLinkedList<>();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            String patientId = (String) model.getValueAt(i, 0);
+            currentList.add(patientControl.findPatientById(patientId));
+        }
+
+        switch (sortBy) {
+            case "Sort by ID":
+                currentList.sort(new PatientComparators.SortById());
+                break;
+            case "Sort by Name":
+                currentList.sort(new PatientComparators.SortByName());
+                break;
+            case "Sort by Age":
+                currentList.sort(new PatientComparators.SortByAge());
+                break;
+        }
+
+        populateTable(currentList);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -199,10 +251,16 @@ public class PatientListUI extends javax.swing.JFrame {
         btnAdd = new javax.swing.JButton();
         btnDelete = new javax.swing.JButton();
         btnQueue = new javax.swing.JButton();
-        jLabel1 = new javax.swing.JLabel();
-        txtSearch = new javax.swing.JTextField();
         cmbReport = new javax.swing.JComboBox<>();
         btnReport = new javax.swing.JButton();
+        pnlSearchSort = new javax.swing.JPanel();
+        lblSearch = new javax.swing.JLabel();
+        txtSearch = new javax.swing.JTextField();
+        lblBy = new javax.swing.JLabel();
+        cmbSearch = new javax.swing.JComboBox<>();
+        btnSearch = new javax.swing.JButton();
+        cmbSort = new javax.swing.JComboBox<>();
+        btnSort = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -255,9 +313,6 @@ public class PatientListUI extends javax.swing.JFrame {
             }
         });
 
-        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
-        jLabel1.setText("Search:");
-
         cmbReport.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "PATIENT DEMOGRAPHICS REPORT", "OVERALL CLINIC PEAK HOURS REPORT" }));
 
         btnReport.setText("Report");
@@ -267,40 +322,93 @@ public class PatientListUI extends javax.swing.JFrame {
             }
         });
 
+        lblSearch.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
+        lblSearch.setText("Search:");
+
+        lblBy.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
+        lblBy.setText("By");
+
+        cmbSearch.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ID", "Name", "Age", "IC Number", "Contact Number", "Email" }));
+
+        btnSearch.setText("Search");
+        btnSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSearchActionPerformed(evt);
+            }
+        });
+
+        cmbSort.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Sort by ID", "Sort by Name", "Sort by Age" }));
+
+        btnSort.setText("Sort");
+        btnSort.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSortActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout pnlSearchSortLayout = new javax.swing.GroupLayout(pnlSearchSort);
+        pnlSearchSort.setLayout(pnlSearchSortLayout);
+        pnlSearchSortLayout.setHorizontalGroup(
+            pnlSearchSortLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlSearchSortLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(lblSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(lblBy, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(cmbSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(btnSearch)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(cmbSort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnSort)
+                .addContainerGap())
+        );
+        pnlSearchSortLayout.setVerticalGroup(
+            pnlSearchSortLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlSearchSortLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(pnlSearchSortLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblBy, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cmbSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnSearch)
+                    .addComponent(cmbSort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnSort))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(scrTblPatient, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 1092, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(pnlSearchSort, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(scrTblPatient, javax.swing.GroupLayout.DEFAULT_SIZE, 988, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(cmbReport, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnReport)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnQueue)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnDelete)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnAdd)))))
+                        .addComponent(cmbReport, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnReport)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnQueue)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnDelete)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnAdd)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel1))
+                .addComponent(pnlSearchSort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(scrTblPatient, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -366,6 +474,14 @@ public class PatientListUI extends javax.swing.JFrame {
         new PatientReportUI(selectedReport, patientControl, queueControl).setVisible(true);
     }//GEN-LAST:event_btnReportActionPerformed
 
+    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
+        performSearch();
+    }//GEN-LAST:event_btnSearchActionPerformed
+
+    private void btnSortActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSortActionPerformed
+        performSort();
+    }//GEN-LAST:event_btnSortActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -396,8 +512,14 @@ public class PatientListUI extends javax.swing.JFrame {
     private javax.swing.JButton btnDelete;
     private javax.swing.JButton btnQueue;
     private javax.swing.JButton btnReport;
+    private javax.swing.JButton btnSearch;
+    private javax.swing.JButton btnSort;
     private javax.swing.JComboBox<String> cmbReport;
-    private javax.swing.JLabel jLabel1;
+    private javax.swing.JComboBox<String> cmbSearch;
+    private javax.swing.JComboBox<String> cmbSort;
+    private javax.swing.JLabel lblBy;
+    private javax.swing.JLabel lblSearch;
+    private javax.swing.JPanel pnlSearchSort;
     private javax.swing.JScrollPane scrTblPatient;
     private javax.swing.JTable tblPatient;
     private javax.swing.JTextField txtSearch;

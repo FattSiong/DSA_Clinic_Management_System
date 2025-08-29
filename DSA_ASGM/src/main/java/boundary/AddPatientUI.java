@@ -85,7 +85,6 @@ public class AddPatientUI extends javax.swing.JFrame {
             return false;
         }
 
-        // --- NEW AND IMPROVED CHECKS ---
         // 5. Validate IC Number using isEditValid()
         if (!ftfIcNumber.isEditValid()) {
             ShowMessage.showError(this, "Please enter a complete and valid IC Number.");

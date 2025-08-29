@@ -5,6 +5,7 @@
 package entity;
 
 import java.time.LocalTime;
+import java.util.Objects;
 
 /**
  *
@@ -115,6 +116,19 @@ public class Queue implements Comparable<Queue> {
     @Override
     public int compareTo(Queue other) {
         return Integer.compare(this.queueId, other.getQueueId());
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final Queue other = (Queue) obj;
+
+        return Objects.equals(this.queueId, other.queueId);
     }
 
     @Override
