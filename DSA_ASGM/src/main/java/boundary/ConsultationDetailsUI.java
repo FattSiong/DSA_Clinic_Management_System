@@ -125,14 +125,29 @@ public class ConsultationDetailsUI extends JFrame {
     private void saveConsultation() {
         String diagnosis = diagnosisArea.getText();
         String notes = notesArea.getText();
+        String result;
 
-        // Call the control class to do the work
-        String result = consultationControl.saveNewConsultation(appointment, diagnosis, notes);
+        if (this.appointment != null) {
+            // It's a scheduled appointment, call the appointment-specific method
+            result = consultationControl.saveAppointmentConsultation(this.appointment, diagnosis, notes);
+        } else if (this.queue != null) {
+            // It's a walk-in patient from the queue, call the queue-specific method
+            result = consultationControl.saveWalkInConsultation(this.queue, diagnosis, notes);
+            
+            // Note: The UI now also updates the queue status, and the QueueControl
+            // will handle the file saving for the queue.
+            this.queue.setStatus("Completed");
+            this.queueControl.updateQueueFile();
+            
+        } else {
+            // Neither an appointment nor a queue item was selected
+            JOptionPane.showMessageDialog(this, "Internal Error: No patient selected for consultation.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         if (result.startsWith("Success")) {
-            // Save both files since changes were made to both lists
             JOptionPane.showMessageDialog(this, result);
-            parentUI.performSearch();
+            parentUI.refreshTable(); // Refresh both the appointment and queue tables
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, result, "Input Error", JOptionPane.ERROR_MESSAGE);

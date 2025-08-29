@@ -112,7 +112,7 @@ public class MainUI extends JFrame {
         });
 
         btnConsultation.addActionListener(e -> {
-            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList).setVisible(true);
+            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList, scheduleList).setVisible(true);
             this.setVisible(false);
         });
 

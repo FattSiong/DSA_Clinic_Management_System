@@ -10,6 +10,7 @@ import entity.Doctor;
 import java.util.Iterator;
 import entity.Patient;
 import entity.Queue;
+import utility.ReadWriteFile;
 
 /**
  *
@@ -18,6 +19,7 @@ import entity.Queue;
 public class QueueControl {
 
     private ListInterface<Queue> patientQueue;
+    private ReadWriteFile fileManager;
     private PatientControl patientControl;
 
     public QueueControl() {
@@ -27,6 +29,7 @@ public class QueueControl {
     
     public QueueControl(ListInterface<Queue> qList) {
         this.patientQueue = qList;
+        this.fileManager = new ReadWriteFile();
     }
 
     public ListInterface<Patient> getAllPatients() {
@@ -128,5 +131,13 @@ public class QueueControl {
             }
         }
         return inConsultationList;
+    }
+    
+    /**
+     * Updates the queue data file.
+     * This method is called by the UI after a consultation is saved.
+     */
+    public void updateQueueFile() {
+        fileManager.writeQueuesToFile("src/main/java/Data File/queues", patientQueue);
     }
 }

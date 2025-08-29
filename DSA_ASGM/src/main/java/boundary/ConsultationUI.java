@@ -48,6 +48,7 @@ public class ConsultationUI extends JFrame {
     private ListInterface<Doctor> doctorList;
     private ListInterface<Consultation> consultationList;
     private ListInterface<Queue> queueList;
+    private ListInterface<Schedule> scheduleList;
     private ReadWriteFile fileManager;
     private ConsultationControl consultationControl;
     private AppointmentControl appointmentControl;
@@ -64,7 +65,7 @@ public class ConsultationUI extends JFrame {
     private int lastSortedColumn = -1;
     private boolean isAscending = true;
 
-    public ConsultationUI(JFrame parent, ReadWriteFile fileManager, ListInterface<Appointment> appointments, ListInterface<Patient> patients, ListInterface<Doctor> doctors, ListInterface<Consultation> consultations, ListInterface<Queue> queues) {
+    public ConsultationUI(JFrame parent, ReadWriteFile fileManager, ListInterface<Appointment> appointments, ListInterface<Patient> patients, ListInterface<Doctor> doctors, ListInterface<Consultation> consultations, ListInterface<Queue> queues, ListInterface<Schedule> schedules) {
         this.fileManager = fileManager;
         this.parentFrame = parent;
         this.fullAppointmentList = appointments;
@@ -73,9 +74,10 @@ public class ConsultationUI extends JFrame {
         this.doctorList = doctors;
         this.consultationList = consultations;
         this.queueList = queues;
+        this.scheduleList = schedules;
 
         this.queueControl = new QueueControl(queues);
-        this.consultationControl = new ConsultationControl(appointments, consultations, queues, fileManager);
+        this.consultationControl = new ConsultationControl(appointments, consultations, queues, schedules, fileManager);
         this.appointmentControl = new AppointmentControl(appointments, patients, doctors, fileManager);
 
         // --- Frame Setup ---        
@@ -158,8 +160,17 @@ public class ConsultationUI extends JFrame {
             }
         };
         inConsultationTable = new JTable(inConsultationTableModel);
+        inConsultationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        inConsultationTable.setFont(new Font("Arial", Font.PLAIN, 14));
+        inConsultationTable.setRowHeight(30);
+        
+        JTableHeader inConsultationHeader = inConsultationTable.getTableHeader();
+        inConsultationHeader.setFont(new Font("Arial", Font.BOLD, 14));
+        inConsultationHeader.setBackground(new Color(230, 230, 230));
         rightPanel.add(new JScrollPane(inConsultationTable), BorderLayout.CENTER);
+        
 
+        
         // --- Split Pane to hold both panels ---
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
         splitPane.setResizeWeight(0.75);
@@ -233,25 +244,7 @@ public class ConsultationUI extends JFrame {
                 }
             }
         });
-
-        //        btnStartConsultation.addActionListener(e -> {
-        //            int selectedRow = appointmentsTable.getSelectedRow();
-        //            if (selectedRow >= 0) {
-        //                String appointmentId = (String) tableModel.getValueAt(selectedRow, 0);
-        //                Appointment selectedApp = appointmentControl.findAppointmentById(appointmentId);
-        //
-        //                if (selectedApp != null) {
-        //                    if (!selectedApp.getStatus().equals("Scheduled")) {
-        //                        JOptionPane.showMessageDialog(this, "Only 'Scheduled' appointments can be started.", "Action Not Allowed", JOptionPane.WARNING_MESSAGE);
-        //                        return;
-        //                    }
-        //                    // Open the details form, passing the control class
-        //                    new ConsultationDetailsUI(this, selectedApp, fileManager, consultationControl).setVisible(true);
-        //                }
-        //            } else {
-        //                JOptionPane.showMessageDialog(this, "Please select an appointment to start.", "No Selection", JOptionPane.WARNING_MESSAGE);
-        //            }
-        //        });
+        
         btnStartConsultation.addActionListener(e -> startConsultationAction());
 
         btnBookNew.addActionListener(e -> {
@@ -278,7 +271,7 @@ public class ConsultationUI extends JFrame {
         });
 
         btnManageConsultations.addActionListener(e -> {
-            new ManageConsultationUI(this, this, consultationList, fullAppointmentList, queueList, fileManager).setVisible(true);
+            new ManageConsultationUI(this, this, consultationList, fullAppointmentList, queueList, scheduleList, fileManager).setVisible(true);
             this.setVisible(false);
         });
 
