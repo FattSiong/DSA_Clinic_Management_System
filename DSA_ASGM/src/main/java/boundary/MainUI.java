@@ -5,6 +5,8 @@
 package boundary;
 
 import adt.ListInterface; // Make sure to import your ADT package
+import control.PatientControl;
+import control.QueueControl;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDateTime;
@@ -31,34 +33,34 @@ import java.awt.event.ActionListener;
 public class MainUI extends JFrame {
 
     private ListInterface<Patient> patientList;
+    private ListInterface<Queue> queueList;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Medicine> medicineList;
     private ListInterface<Schedule> scheduleList;
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
     private ListInterface<Treatment> treatmentList;
-    private ListInterface<Queue> queueList;
     private ListInterface<DispensedItem> dispensedItemList;
     private ListInterface<DispensingRecord> dispensingRecordList;
 
     private static ReadWriteFile fileManager = new ReadWriteFile();
 
     public MainUI(
-            ListInterface<Patient> patientList, ListInterface<Doctor> doctorList,
+            ListInterface<Patient> patientList, ListInterface<Queue> queueList, ListInterface<Doctor> doctorList,
             ListInterface<Medicine> medicineList, ListInterface<Schedule> scheduleList,
             ListInterface<Appointment> appointmentList, ListInterface<Consultation> consultationList,
             ListInterface<Treatment> treatmentList, ListInterface<DispensedItem> dispensedItemList,
             ListInterface<DispensingRecord> dispensingRecordList) {
 
         this.patientList = patientList;
+        this.queueList = queueList;
         this.doctorList = doctorList;
         this.medicineList = medicineList;
         this.scheduleList = scheduleList;
         this.appointmentList = appointmentList;
         this.consultationList = consultationList;
         this.treatmentList = treatmentList;
-        this.dispensedItemList = dispensedItemList;
-        this.dispensingRecordList = dispensingRecordList;
+        this.queueList = queueList;
 
         // --- Frame Setup ---
         setTitle("TAR UMT Clinic Management System");
@@ -107,10 +109,13 @@ public class MainUI extends JFrame {
         buttonPanel.add(btnPharmacy);
 
         btnPatient.addActionListener(new ActionListener() {
+            PatientControl patientControl = new PatientControl();
+            QueueControl queueControl = new QueueControl();
+
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Navigating to Patient Management Module...");
-                new PatientListUI().setVisible(true);
+                new PatientListUI(patientControl, queueControl).setVisible(true);
             }
         });
 
@@ -119,7 +124,7 @@ public class MainUI extends JFrame {
         });
 
         btnConsultation.addActionListener(e -> {
-            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList).setVisible(true);
+            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList, scheduleList).setVisible(true);
             this.setVisible(false);
         });
 
