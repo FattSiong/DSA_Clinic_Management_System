@@ -138,6 +138,7 @@ public class ReadWriteFile {
                 Doctor doctor = data[3].equals("N/A") ? null : findDoctorById(doctorList, data[3]);
                 LocalDateTime entryTime = LocalDateTime.parse(data[4]);
                 LocalDateTime exitTime = data[5].equals("N/A") ? null : LocalDateTime.parse(data[5]);
+                
                 String status = data[6];
 
                 if (patient != null) {

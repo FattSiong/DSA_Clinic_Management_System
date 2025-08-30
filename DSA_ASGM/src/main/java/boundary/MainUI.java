@@ -37,7 +37,7 @@ public class MainUI extends JFrame {
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
     private ListInterface<Treatment> treatmentList;
-  
+    
     private static ReadWriteFile fileManager = new ReadWriteFile();
 
     public MainUI(
