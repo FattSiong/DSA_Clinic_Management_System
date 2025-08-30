@@ -1,11 +1,10 @@
-C1003|P1001|D1001|Q1|Stomach Ache|Diagnosed with gastritis, no follow-up needed.|2025-08-28
-C1004|P1002|D1002|A1003|Check-up|Routine check-up, patient is healthy.|2025-08-28
-C1005|P1002|D1002|Q2|Cold Symptoms|Prescribed cough syrup, patient needs to rest.|2025-08-29
-C1006|P1002|D1002|A1004|Sprained Ankle|Advised to use crutches for a week.|2025-08-29
-C1007|P1003|D1003|Q3|Dental Pain|Referred to a dentist.|2025-08-29
-C1008|P1002|D1002|A1005|Allergies|Prescribed antihistamines for seasonal allergies.|2025-08-29
-C1009|P1002|D1002|A1006|Sore Throat|Infection, prescribed antibiotics.|2025-08-29
-C1010|P1002|D1002|A1007|Flu-like Symptoms|Confirmed influenza, advised to self-isolate.|2025-08-29
-C1011|P1006|D1001|A1027|fffdsf|fdsfsd|2025-08-29
-C1012|P1005|D1004|Q4|dsadsad|dsadsadas|2025-08-29
-C1013|P1003|D1003|Q3|dsadas|dasdad|2025-08-29
+C1018|P1021|D1005|Q5|Headache|Prescribed painkillers, rest advised.|2025-08-30
+C1019|P1003|D1002|A1030|Back Pain|Referred to physiotherapy.|2025-08-30
+C1020|P1015|D1004|Q6|Skin Rash|Prescribed ointment for treatment.|2025-08-30
+C1021|P1022|D1001|A1030|High Blood Pressure|Medication prescribed, follow-up in 2 weeks.|2025-08-30
+C1022|P1011|D1003|Q7|Toothache|Scheduled dental extraction.|2025-08-30
+C1023|P1023|D1002|A1031|Fever|Advised paracetamol and fluids.|2025-08-30
+C1024|P1024|D1005|Q8|Asthma Attack|Inhaler prescribed, monitor symptoms.|2025-08-30
+C1025|P1009|D1004|A1032|Diabetes Check-up|Blood sugar test performed, stable condition.|2025-08-30
+C1026|P1010|D1001|Q9|Chest Pain|Referred to cardiologist for further tests.|2025-08-30
+C1027|P1018|D1003|A1033|Migraine|Strong pain relief prescribed.|2025-08-30

@@ -59,4 +59,22 @@ public final class ShowMessage {
     public static void showError(Component parent, String message) {
         JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
+    
+    /**
+     * Displays a confirmation dialog with YES/NO options and a warning icon.
+     *
+     * @param parent The parent component.
+     * @param message The question to ask the user.
+     * @param title The title for the dialog window.
+     * @return An integer value representing the user's choice (e.g., JOptionPane.YES_OPTION).
+     */
+    public static int showConfirm(Component parent, String message, String title) {
+        return JOptionPane.showConfirmDialog(
+            parent, 
+            message, 
+            title, 
+            JOptionPane.YES_NO_OPTION, 
+            JOptionPane.WARNING_MESSAGE
+        );
+    }
 }
