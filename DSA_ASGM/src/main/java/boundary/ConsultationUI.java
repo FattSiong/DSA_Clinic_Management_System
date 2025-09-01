@@ -49,6 +49,7 @@ public class ConsultationUI extends JFrame {
     private ListInterface<Consultation> consultationList;
     private ListInterface<Queue> queueList;
     private ListInterface<Schedule> scheduleList;
+    private ListInterface<Treatment> treatmentList;
     private ReadWriteFile fileManager;
     private ConsultationControl consultationControl;
     private AppointmentControl appointmentControl;
@@ -65,7 +66,7 @@ public class ConsultationUI extends JFrame {
     private int lastSortedColumn = -1;
     private boolean isAscending = true;
 
-    public ConsultationUI(JFrame parent, ReadWriteFile fileManager, ListInterface<Appointment> appointments, ListInterface<Patient> patients, ListInterface<Doctor> doctors, ListInterface<Consultation> consultations, ListInterface<Queue> queues, ListInterface<Schedule> schedules) {
+    public ConsultationUI(JFrame parent, ReadWriteFile fileManager, ListInterface<Appointment> appointments, ListInterface<Patient> patients, ListInterface<Doctor> doctors, ListInterface<Consultation> consultations, ListInterface<Queue> queues, ListInterface<Schedule> schedules, ListInterface<Treatment> treatments) {
         this.fileManager = fileManager;
         this.parentFrame = parent;
         this.fullAppointmentList = appointments;
@@ -74,10 +75,11 @@ public class ConsultationUI extends JFrame {
         this.doctorList = doctors;
         this.consultationList = consultations;
         this.queueList = queues;
+        this.treatmentList = treatments;
         this.scheduleList = schedules;
 
         this.queueControl = new QueueControl(queues);
-        this.consultationControl = new ConsultationControl(appointments, consultations, queues, schedules, fileManager);
+        this.consultationControl = new ConsultationControl(appointments, consultations, queues, schedules, treatments, fileManager);
         this.appointmentControl = new AppointmentControl(appointments, patients, doctors, fileManager);
 
         // --- Frame Setup ---        
@@ -271,7 +273,7 @@ public class ConsultationUI extends JFrame {
         });
 
         btnManageConsultations.addActionListener(e -> {
-            new ManageConsultationUI(this, this, consultationList, fullAppointmentList, queueList, scheduleList, fileManager).setVisible(true);
+            new ManageConsultationUI(this, this, consultationList, fullAppointmentList, queueList, scheduleList, treatmentList, fileManager).setVisible(true);
             this.setVisible(false);
         });
 
@@ -300,11 +302,30 @@ public class ConsultationUI extends JFrame {
         });
 
         btnViewHistory.addActionListener(e -> {
-            // ... (action listener logic)
+            int appointmentRow = appointmentsTable.getSelectedRow();
+            int queueRow = inConsultationTable.getSelectedRow();
+
+            if (appointmentRow > -1) {
+                // Get patient from the selected appointment
+                int actualIndex = ((currentPage - 1) * ROWS_PER_PAGE) + appointmentRow + 1;
+                Appointment selectedApp = filteredTodaysList.getEntry(actualIndex);
+                if (selectedApp != null) {
+                    new PatientHistoryUI(this, selectedApp.getPatient().getPatientID(), selectedApp.getPatient().getName(), consultationControl).setVisible(true);
+                }
+            } else if (queueRow > -1) {
+                // Get patient from the selected queue item
+                ListInterface<Queue> inConsultationList = queueControl.getInConsultationQueue();
+                Queue selectedQueue = inConsultationList.getEntry(queueRow + 1);
+                if (selectedQueue != null) {
+                    new PatientHistoryUI(this, selectedQueue.getPatient().getPatientID(), selectedQueue.getPatient().getName(), consultationControl).setVisible(true);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a patient from either table to view their history.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            }
         });
 
         btnGenerateReport.addActionListener(e -> {
-            // ... (action listener logic)
+            new GenerateReportUI(this, consultationControl).setVisible(true);
         });
 
         btnBack.addActionListener(e -> {
