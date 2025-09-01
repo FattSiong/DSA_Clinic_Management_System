@@ -62,6 +62,7 @@ public class MainUI extends JFrame {
         this.consultationList = consultationList;
         this.treatmentList = treatmentList;
         this.queueList = queueList;
+        
 
         // --- Frame Setup ---
         setTitle("TAR UMT Clinic Management System");
@@ -115,6 +116,7 @@ public class MainUI extends JFrame {
 
             @Override
             public void actionPerformed(ActionEvent e) {
+                queueControl.loadQueueData();
                 System.out.println("Navigating to Patient Management Module...");
                 new PatientListUI(patientControl, queueControl).setVisible(true);
             }
@@ -127,6 +129,7 @@ public class MainUI extends JFrame {
 });
 
         btnConsultation.addActionListener(e -> {
+            
             new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList, scheduleList, treatmentList).setVisible(true);
             this.setVisible(false);
         });

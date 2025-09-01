@@ -271,7 +271,7 @@ public class TreatmentController {
     }
 
     public Treatment addTreatment(Consultation consultation, String details, ListInterface<Medicine> prescribedMedicines) {
-        String newId = "TR" + String.format("%03d", treatmentList.getLength() + 1);
+        String newId = "T" + String.format("%03d", treatmentList.getLength() + 1);
         Treatment newTreatment = new Treatment(newId, consultation, details, prescribedMedicines);
         if (treatmentList.add(newTreatment)) {
             fileManager.writeTreatmentsToFile("src/main/java/Data File/treatments", treatmentList);

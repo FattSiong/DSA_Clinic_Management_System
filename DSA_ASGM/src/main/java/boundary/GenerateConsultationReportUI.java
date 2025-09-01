@@ -22,7 +22,7 @@ import java.time.YearMonth;
  *
  * @author tiong
  */
-public class GenerateReportUI extends JDialog {
+public class GenerateConsultationReportUI extends JDialog {
 
     private final ConsultationControl consultationControl;
     private JComboBox<String> reportComboBox;
@@ -47,7 +47,7 @@ public class GenerateReportUI extends JDialog {
         "Annually"
     };
 
-    public GenerateReportUI(JFrame parent, ConsultationControl consultationControl) {
+    public GenerateConsultationReportUI(JFrame parent, ConsultationControl consultationControl) {
         super(parent, "Generate Reports", true); // Modal dialog
         this.consultationControl = consultationControl;
 
@@ -237,7 +237,7 @@ public class GenerateReportUI extends JDialog {
                 reportOutput = "Error: Invalid report selected.";
         }
 
-        new ReportUI(this, selectedReport, reportOutput).setVisible(true);
+        new ConsultationReportUI(this, selectedReport, reportOutput).setVisible(true);
     }
     
     private String generateSummaryReportWithDate(String period) {

@@ -78,12 +78,6 @@ public class Treatment implements Comparable<Treatment> {
 
     public void setPrescribedMedicine(ListInterface<Medicine> prescribedMedicine) {
         this.prescribedMedicine = prescribedMedicine;
-    }
-    
-    //For creating a reverted treatment without a consultation link
-    public Treatment(String treatmentID, String treatmentDetails, ListInterface<Medicine> prescribedMedicine) {
-        this(treatmentID, null, treatmentDetails, prescribedMedicine);
-    }
 
     @Override
     public int compareTo(Treatment other) {

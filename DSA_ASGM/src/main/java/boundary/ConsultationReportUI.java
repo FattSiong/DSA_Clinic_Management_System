@@ -11,9 +11,9 @@ import java.awt.*;
  *
  * @author tiong
  */
-public class ReportUI extends JDialog {
+public class ConsultationReportUI extends JDialog {
 
-    public ReportUI(JDialog parent, String reportTitle, String reportText) {
+    public ConsultationReportUI(JDialog parent, String reportTitle, String reportText) {
         super(parent, reportTitle, true);
         
         // --- Frame Setup ---

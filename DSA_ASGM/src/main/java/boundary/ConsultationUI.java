@@ -79,8 +79,10 @@ public class ConsultationUI extends JFrame {
         this.scheduleList = schedules;
 
         this.queueControl = new QueueControl(queues);
-        this.consultationControl = new ConsultationControl(appointments, consultations, queues, schedules, treatments, fileManager);
-        this.appointmentControl = new AppointmentControl(appointments, patients, doctors, fileManager);
+        this.consultationControl = new ConsultationControl(appointments, consultations, queues, patients, doctors, schedules, treatments, fileManager);
+        this.appointmentControl = new AppointmentControl(appointments, patients, doctors, schedules, fileManager);
+        
+        consultationControl.loadQueueData();
 
         // --- Frame Setup ---        
         setTitle("Consultation Management");
@@ -250,7 +252,7 @@ public class ConsultationUI extends JFrame {
         btnStartConsultation.addActionListener(e -> startConsultationAction());
 
         btnBookNew.addActionListener(e -> {
-            new AppointmentFormUI(this, fileManager, patientList, doctorList, fullAppointmentList).setVisible(true);
+            new AppointmentFormUI(this, fileManager, patientList, doctorList, scheduleList, fullAppointmentList).setVisible(true);
         });
 
         btnScheduleFollowUp.addActionListener(e -> {
@@ -260,7 +262,7 @@ public class ConsultationUI extends JFrame {
                 Appointment selectedApp = appointmentControl.findAppointmentById(appointmentId);
                 if (selectedApp != null) {
                     // Open form in "Follow-up" mode with patient and doctor pre-filled
-                    new AppointmentFormUI(this, fileManager, selectedApp.getPatient(), selectedApp.getDoctor(), patientList, doctorList, fullAppointmentList).setVisible(true);
+                    new AppointmentFormUI(this, fileManager, selectedApp.getPatient(), selectedApp.getDoctor(), patientList, doctorList, scheduleList, fullAppointmentList).setVisible(true);
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Please select an appointment to schedule a follow-up.", "No Selection", JOptionPane.WARNING_MESSAGE);
@@ -268,12 +270,12 @@ public class ConsultationUI extends JFrame {
         });
 
         btnManageAppointments.addActionListener(e -> {
-            new ManageAppointmentUI(this, this, fullAppointmentList, patientList, doctorList, fileManager).setVisible(true);
+            new ManageAppointmentUI(this, this, fullAppointmentList, patientList, doctorList, scheduleList, fileManager).setVisible(true);
             this.setVisible(false);
         });
 
         btnManageConsultations.addActionListener(e -> {
-            new ManageConsultationUI(this, this, consultationList, fullAppointmentList, queueList, scheduleList, treatmentList, fileManager).setVisible(true);
+            new ManageConsultationUI(this, this, consultationList, fullAppointmentList, queueList, scheduleList, treatmentList, doctorList, patientList, fileManager).setVisible(true);
             this.setVisible(false);
         });
 
@@ -325,7 +327,7 @@ public class ConsultationUI extends JFrame {
         });
 
         btnGenerateReport.addActionListener(e -> {
-            new GenerateReportUI(this, consultationControl).setVisible(true);
+            new GenerateConsultationReportUI(this, consultationControl).setVisible(true);
         });
 
         btnBack.addActionListener(e -> {

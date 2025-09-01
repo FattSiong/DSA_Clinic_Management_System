@@ -10,6 +10,8 @@ import control.ConsultationControl;
 import utility.ReadWriteFile;
 import entity.Appointment;
 import entity.Consultation;
+import entity.Doctor;
+import entity.Patient;
 import entity.Queue;
 import entity.Schedule;
 import entity.Treatment;
@@ -51,14 +53,14 @@ public class ManageConsultationUI extends JFrame {
     private int lastSortedColumn = -1;
     private boolean isAscending = true;
 
-    public ManageConsultationUI(JFrame parentFrame, ConsultationUI parentUI, ListInterface<Consultation> conList, ListInterface<Appointment> appList, ListInterface<Queue> queList, ListInterface<Schedule> schList, ListInterface<Treatment> treatList, ReadWriteFile fileManager) {
+    public ManageConsultationUI(JFrame parentFrame, ConsultationUI parentUI, ListInterface<Consultation> conList, ListInterface<Appointment> appList, ListInterface<Queue> queList, ListInterface<Schedule> schList, ListInterface<Treatment> treatList, ListInterface<Doctor> docList, ListInterface<Patient> patList, ReadWriteFile fileManager) {
         this.parentFrame = parentFrame;
         this.parentUI = parentUI;
         this.fullConsultationList = conList;
         this.filteredConsultationList = conList;
         this.appointmentList = appList;
         this.fileManager = fileManager;
-        this.consultationControl = new ConsultationControl(appList, conList, queList, schList, treatList, fileManager);
+        this.consultationControl = new ConsultationControl(appList, conList, queList, patList, docList, schList, treatList, fileManager);
 
         setTitle("Manage All Consultations");
         setSize(900, 700);

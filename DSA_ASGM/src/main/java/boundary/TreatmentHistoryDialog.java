@@ -4,11 +4,12 @@ package boundary;
 import adt.ListInterface;
 import control.TreatmentController;
 import entity.Treatment;
-// utility.DatePicker is no longer needed
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Iterator;
@@ -25,8 +26,8 @@ public class TreatmentHistoryDialog extends JDialog {
     private JComboBox<String> cmbSearchBy;
     private JTextField tfSearchTerm;
     private JComboBox<String> cmbReportType;
-    private JTextField tfStartDate; // Reverted to JTextField
-    private JTextField tfEndDate;   // Reverted to JTextField
+    private JTextField tfStartDate;
+    private JTextField tfEndDate;
     private JPanel datePanel;
 
     public TreatmentHistoryDialog(Frame owner, TreatmentController controller) {
@@ -88,11 +89,11 @@ public class TreatmentHistoryDialog extends JDialog {
         
         datePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         datePanel.add(new JLabel("Start Date (YYYY-MM-DD):"));
-        tfStartDate = new JTextField(10); // Use JTextField
+        tfStartDate = new JTextField(10);
         tfStartDate.setText(LocalDate.now().minusMonths(1).toString());
         datePanel.add(tfStartDate);
         datePanel.add(new JLabel("End Date (YYYY-MM-DD):"));
-        tfEndDate = new JTextField(10); // Use JTextField
+        tfEndDate = new JTextField(10);
         tfEndDate.setText(LocalDate.now().toString());
         datePanel.add(tfEndDate);
         datePanel.setVisible(true);
@@ -124,7 +125,7 @@ public class TreatmentHistoryDialog extends JDialog {
         
         add(mainPanel);
 
-        // Add Listeners
+        // --- Add Listeners ---
         btnSearch.addActionListener(e -> searchTreatments());
         btnClear.addActionListener(e -> {
             tfSearchTerm.setText("");
@@ -140,6 +141,29 @@ public class TreatmentHistoryDialog extends JDialog {
             boolean isDiagnosisReport = "Diagnosis Frequency".equals(cmbReportType.getSelectedItem());
             datePanel.setVisible(isDiagnosisReport);
         });
+
+        // ADDED: Mouse listener for double-click action
+        treatmentTable.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent mouseEvent) {
+                if (mouseEvent.getClickCount() == 2 && treatmentTable.getSelectedRow() != -1) {
+                    showTreatmentDetails();
+                }
+            }
+        });
+    }
+
+    private void showTreatmentDetails() {
+        int selectedRow = treatmentTable.getSelectedRow();
+        if (selectedRow == -1) return; // Should not happen, but safe to check
+
+        String treatmentId = (String) treatmentTableModel.getValueAt(selectedRow, 0);
+        Treatment treatment = treatmentController.findTreatmentById(treatmentId);
+
+        if (treatment != null) {
+            new TreatmentDetailDialog(this.owner, treatment).setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(this, "Could not retrieve details for the selected treatment.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void generateAndShowReport() {
@@ -150,8 +174,8 @@ public class TreatmentHistoryDialog extends JDialog {
             reportText = treatmentController.generateMedicineFrequencyReport();
         } else if ("Diagnosis Frequency".equals(reportType)) {
             try {
-                LocalDate startDate = LocalDate.parse(tfStartDate.getText()); // Get date from text field
-                LocalDate endDate = LocalDate.parse(tfEndDate.getText());   // Get date from text field
+                LocalDate startDate = LocalDate.parse(tfStartDate.getText());
+                LocalDate endDate = LocalDate.parse(tfEndDate.getText());
                 
                 if (endDate.isBefore(startDate)) {
                      JOptionPane.showMessageDialog(this, "End date cannot be before start date.", "Invalid Date Range", JOptionPane.ERROR_MESSAGE);
