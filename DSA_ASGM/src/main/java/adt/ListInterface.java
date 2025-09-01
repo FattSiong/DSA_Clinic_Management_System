@@ -145,5 +145,12 @@ import java.util.function.Predicate;
      */
     public void sortDescending(Comparator<T> comparator);
     
-    
+    /**
+     * Compares two objects for equality in a null-safe manner.
+     *
+     * @param a The first object.
+     * @param b The second object.
+     * @return True if the objects are equal or both are null, false otherwise.
+     */
+    public boolean customEquals(Object a, Object b);
 }

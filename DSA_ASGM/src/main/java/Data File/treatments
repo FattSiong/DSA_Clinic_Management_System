@@ -1,1 +1,5 @@
-T1001|C1001|Take Paracetamol every 6 hours.|M1001
+T1001|C1006|Prescribed antibiotics and rest for 7 days|M1001,M1003
+T1002|C1007|Minor surgery performed to remove a splinter|M1001
+T1003|C1008|Physical therapy sessions recommended; no medication|M1002
+T1004|C1004|Prescribed painkillers and a follow-up appointment|M1003,M1004
+T1005|C1009|Patient advised to monitor symptoms and return if they worsen|M1004

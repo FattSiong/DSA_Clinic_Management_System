@@ -1,164 +1,214 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-
+// Name: <Your Name>
 package boundary;
 
-import control.TreatmentControl;
 import adt.ListInterface;
+import control.TreatmentController;
 import entity.Consultation;
-import entity.Medicine;
-import entity.Treatment;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
+import java.util.Iterator;
+import java.util.Objects;
 
 public class TreatmentUI extends JFrame {
+
+    private final TreatmentController treatmentController;
+    private final Frame owner;
+
+    // UI Components
     private JTable consultationTable;
-    private DefaultTableModel tableModel;
-    private ListInterface<Consultation> consultationList;
-    private ListInterface<Medicine> medicineList;
-    private ListInterface<Treatment> treatmentList;
-    private JFrame parentFrame;
-    
+    private DefaultTableModel consultationTableModel;
+    private JTextField tfSearch;
+    private JComboBox<String> cmbSearchBy; // Added for search criteria
+    private JButton btnSearch, btnClear, btnCreate, btnHistory, btnBack;
+    private JLabel lblPageInfo;
+    private JButton btnPrev, btnNext;
 
-    public TreatmentUI(JFrame parent,
-                       ListInterface<Consultation> consultations,
-                       ListInterface<Medicine> medicines,
-                       ListInterface<Treatment> treatments) {
+    // Pagination state
+    private int currentPage = 1;
+    private final int rowsPerPage = 10;
+    private ListInterface<Consultation> currentConsultationList;
 
-        this.parentFrame = parent;
-        this.consultationList = consultations;
-        this.medicineList = medicines;
-        this.treatmentList = treatments;
-
-        // --- Frame Setup ---
-        setTitle("Consultation Management");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(900, 700);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout(10, 10));
-        getContentPane().setBackground(new Color(245, 245, 245));
-
-        // --- Header ---
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        headerPanel.setBackground(new Color(0, 102, 204));
-        JLabel titleLabel = new JLabel("Consultation Dashboard");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setForeground(Color.WHITE);
-        headerPanel.add(titleLabel);
-        add(headerPanel, BorderLayout.NORTH);
-
-        // --- Table ---
-        String[] columnNames = {"Consultation ID", "Patient", "Doctor", "Diagnosis", "Date"};
-        tableModel = new DefaultTableModel(columnNames, 0) {
+    public TreatmentUI(Frame owner, TreatmentController controller) {
+        super("Treatment Module - Pending Consultations");
+        this.owner = owner;
+        this.treatmentController = controller;
+        
+        setSize(800, 600);
+        setLocationRelativeTo(owner);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Don't exit the whole app
+        
+        addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-        consultationTable = new JTable(tableModel);
-        consultationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        consultationTable.setFont(new Font("Arial", Font.PLAIN, 14));
-        consultationTable.setRowHeight(30);
-        consultationTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 14));
-        consultationTable.getTableHeader().setBackground(new Color(230, 230, 230));
-
-        loadConsultationData();
-
-        JScrollPane tableScrollPane = new JScrollPane(consultationTable);
-        JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.GRAY),
-                " Consultation Records ",
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 16)
-        ));
-        tablePanel.add(tableScrollPane, BorderLayout.CENTER);
-        add(tablePanel, BorderLayout.CENTER);
-
-        // --- Actions ---
-        JPanel actionsPanel = new JPanel(new GridLayout(1, 2, 10, 10));
-        actionsPanel.setBorder(BorderFactory.createTitledBorder("Actions"));
-        actionsPanel.setBackground(Color.WHITE);
-
-        JButton btnRecordTreatment = new JButton("Record Treatment");
-        styleButton(btnRecordTreatment, new Color(92, 184, 92));
-        
-        JButton btnHistory = new JButton("View Treatment History");
-        styleButton(btnHistory, new Color(0, 123, 255));
-        
-        JButton btnBack = new JButton("Back to Main Menu");
-        styleButton(btnBack, new Color(217, 83, 79));
-
-        actionsPanel.add(btnRecordTreatment);
-        actionsPanel.add(btnHistory);
-        actionsPanel.add(btnBack);
-        add(actionsPanel, BorderLayout.SOUTH);
-
-        // --- Action Listeners ---
-        btnRecordTreatment.addActionListener(e -> {
-            int selectedRow = consultationTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                Consultation selectedConsultation = consultationList.getEntry(selectedRow + 1);
-
-                // Open TreatmentFormUI for this consultation
-                TreatmentControl form = new TreatmentControl(this, selectedConsultation, medicineList, treatmentList);
-                form.setVisible(true);
-                this.setVisible(false);
-
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Please select a consultation first.", "No Selection",
-                        JOptionPane.WARNING_MESSAGE);
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                owner.setVisible(true); // Show the main menu again when this closes
             }
         });
+
+        initComponents();
+        addListeners();
+        updateConsultationListAndTable();
+    }
+
+    private void initComponents() {
+        // --- Main Panel with Padding ---
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // --- Search Panel (NORTH) ---
+        JPanel topPanel = new JPanel(new BorderLayout(10, 0));
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.add(new JLabel("Search By:"));
+        
+        String[] searchOptions = {"Patient IC", "Patient Name", "Doctor Name"};
+        cmbSearchBy = new JComboBox<>(searchOptions);
+        searchPanel.add(cmbSearchBy);
+
+        tfSearch = new JTextField(15);
+        btnSearch = new JButton("Search");
+        btnClear = new JButton("Clear");
+        searchPanel.add(tfSearch);
+        searchPanel.add(btnSearch);
+        searchPanel.add(btnClear);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
+        
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+
+        // --- Consultation Table (CENTER) ---
+        String[] columnNames = {"Consultation ID", "Patient Name", "Patient IC", "Doctor Name", "Date"};
+        consultationTableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        consultationTable = new JTable(consultationTableModel);
+        consultationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        mainPanel.add(new JScrollPane(consultationTable), BorderLayout.CENTER);
+
+        // --- Navigation Panel (SOUTH) ---
+        JPanel navPanel = new JPanel(new BorderLayout());
+        
+        // FIX: Create a separate panel for the left-side buttons
+        JPanel leftActionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        btnCreate = new JButton("Create Treatment Record");
+        btnHistory = new JButton("View Treatment History");
+        btnBack = new JButton("Back to Main Menu");
+        leftActionPanel.add(btnCreate);
+        leftActionPanel.add(btnHistory);
+        leftActionPanel.add(btnBack);
+        navPanel.add(leftActionPanel, BorderLayout.WEST);
+
+        JPanel paginationControls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPrev = new JButton("< Prev");
+        btnNext = new JButton("Next >");
+        lblPageInfo = new JLabel("Page 1 of 1");
+        paginationControls.add(btnPrev);
+        paginationControls.add(lblPageInfo);
+        paginationControls.add(btnNext);
+        navPanel.add(paginationControls, BorderLayout.EAST);
+
+        mainPanel.add(navPanel, BorderLayout.SOUTH);
+
+        add(mainPanel);
+    }
+    
+    private void addListeners() {
+        btnSearch.addActionListener(e -> updateConsultationListAndTable());
+        btnClear.addActionListener(e -> {
+            tfSearch.setText("");
+            cmbSearchBy.setSelectedIndex(0); // Reset dropdown
+            updateConsultationListAndTable();
+        });
+        btnCreate.addActionListener(e -> createTreatmentRecord());
         
         btnHistory.addActionListener(e -> {
-            TreatmentHistoryUI historyUI = new TreatmentHistoryUI(this, treatmentList);
-            historyUI.setVisible(true);
-            this.setVisible(false);
+            TreatmentHistoryDialog historyDialog = new TreatmentHistoryDialog(this, treatmentController);
+            historyDialog.setVisible(true);
         });
 
         btnBack.addActionListener(e -> {
-            parentFrame.setVisible(true);
-            this.dispose();
+            owner.setVisible(true);
+            dispose();
+        });
+
+        btnPrev.addActionListener(e -> {
+            if (currentPage > 1) {
+                currentPage--;
+                updateTableDisplay();
+            }
+        });
+
+        btnNext.addActionListener(e -> {
+            int totalPages = (int) Math.ceil((double) currentConsultationList.getLength() / rowsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateTableDisplay();
+            }
         });
     }
 
-    private void loadConsultationData() {
-        tableModel.setRowCount(0);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-
-        for (int i = 1; i <= consultationList.getLength(); i++) {
-            Consultation c = consultationList.getEntry(i);
-
-            String patientName = (c.getPatient() != null) ? c.getPatient().getName() : "N/A";
-            String doctorName = (c.getDoctor() != null) ? c.getDoctor().getName() : "N/A";
-            String diagnosis = (c.getDiagnosis() != null) ? c.getDiagnosis() : "-";
-            String date = (c.getConsultationDate() != null) ? c.getConsultationDate().format(formatter) : "-";
-
-            tableModel.addRow(new Object[]{
+    private void updateConsultationListAndTable() {
+        currentPage = 1; // Reset to first page on new search
+        String searchTerm = tfSearch.getText();
+        String searchBy = (String) cmbSearchBy.getSelectedItem();
+        currentConsultationList = treatmentController.getPendingConsultations(LocalDate.now(), searchTerm, searchBy);
+        updateTableDisplay();
+    }
+    
+    private void updateTableDisplay() {
+        consultationTableModel.setRowCount(0); // Clear table
+        
+        int totalRecords = currentConsultationList.getLength();
+        if (totalRecords == 0) {
+            lblPageInfo.setText("Page 0 of 0");
+            btnPrev.setEnabled(false);
+            btnNext.setEnabled(false);
+            return;
+        }
+        
+        int totalPages = (int) Math.ceil((double) totalRecords / rowsPerPage);
+        lblPageInfo.setText("Page " + currentPage + " of " + totalPages);
+        btnPrev.setEnabled(currentPage > 1);
+        btnNext.setEnabled(currentPage < totalPages);
+        
+        int start = (currentPage - 1) * rowsPerPage;
+        
+        Iterator<Consultation> it = currentConsultationList.getIterator();
+        int currentIndex = 0;
+        while(it.hasNext()){
+            Consultation c = it.next();
+            if(currentIndex >= start && currentIndex < start + rowsPerPage){
+                 Object[] row = {
                     c.getConsultationID(),
-                    patientName,
-                    doctorName,
-                    diagnosis,
-                    date
-            });
+                    c.getPatient().getName(),
+                    c.getPatient().getIcNumber(),
+                    c.getDoctor().getName(),
+                    c.getConsultationDate()
+                };
+                consultationTableModel.addRow(row);
+            }
+            currentIndex++;
         }
     }
 
-    private void styleButton(JButton button, Color color) {
-        button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setBackground(color);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    private void createTreatmentRecord() {
+        int selectedRow = consultationTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a consultation from the table first.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String consultationId = (String) consultationTableModel.getValueAt(selectedRow, 0);
+        Consultation selectedConsultation = treatmentController.findConsultationById(consultationId);
+        
+        if (selectedConsultation != null) {
+            CreateTreatmentDialog createDialog = new CreateTreatmentDialog(this, treatmentController, selectedConsultation);
+            createDialog.setVisible(true);
+            updateConsultationListAndTable();
+        } else {
+             JOptionPane.showMessageDialog(this, "Could not find the selected consultation details.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
+
