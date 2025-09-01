@@ -32,13 +32,34 @@ public class DoctorControl {
         view.setAddButtonEnabled(doctorList.getLength() < 4);
     }
 
+    // UPDATED: This method now includes validation checks
     public void addDoctor() {
         if (doctorList.getLength() >= 4) {
             view.showMessage("Maximum of 4 doctors allowed!", "Limit Reached", 0);
             return;
         }
+        
         Doctor newDoctor = view.showDoctorInputDialog(null);
+        
+        // If user clicks OK and provides a doctor object
         if (newDoctor != null) {
+            // === VALIDATION LOGIC ===
+            if (!isDoctorIdUnique(newDoctor.getDoctorID())) {
+                view.showMessage("Doctor ID '" + newDoctor.getDoctorID() + "' already exists. Please use a unique ID.", "Validation Error", 0);
+                return; // Stop the process
+            }
+
+            if (!isValidName(newDoctor.getName())) {
+                view.showMessage("Invalid name. Please use only letters, spaces, and periods (e.g., Dr. Emily).", "Validation Error", 0);
+                return; // Stop the process
+            }
+
+            if (!isValidContactNumber(newDoctor.getContactNumber())) {
+                view.showMessage("Invalid contact number. Please use a format like 012-3456789 or 0123456789.", "Validation Error", 0);
+                return; // Stop the process
+            }
+            
+            // If all validations pass, add the doctor
             doctorList.add(newDoctor);
             rwf.writeDoctorsToFile(DOCTOR_FILE, doctorList);
             refreshView();
@@ -55,6 +76,17 @@ public class DoctorControl {
 
         Doctor updatedDoctor = view.showDoctorInputDialog(doctorToUpdate);
         if (updatedDoctor != null) {
+            // Perform validation on the new details
+            if (!isValidName(updatedDoctor.getName())) {
+                view.showMessage("Invalid name. Please use only letters, spaces, and periods (e.g., Dr. Emily).", "Validation Error", 0);
+                return;
+            }
+            if (!isValidContactNumber(updatedDoctor.getContactNumber())) {
+                view.showMessage("Invalid contact number. Please use a format like 012-3456789 or 0123456789.", "Validation Error", 0);
+                return;
+            }
+
+            // If validation passes, update the doctor
             doctorToUpdate.setName(updatedDoctor.getName());
             doctorToUpdate.setContactNumber(updatedDoctor.getContactNumber());
             doctorToUpdate.setRoomNumber(updatedDoctor.getRoomNumber());
@@ -86,20 +118,11 @@ public class DoctorControl {
         }
 
         String[] reportTypes = {"Weekly Patient Load", "Monthly Patient Load"};
-        String selectedType = (String) javax.swing.JOptionPane.showInputDialog(
-                null, 
-                "Select the report type:",
-                "Generate Patient Load Report", 
-                javax.swing.JOptionPane.QUESTION_MESSAGE, 
-                null, 
-                reportTypes, 
-                reportTypes[0]);
-
+        String selectedType = (String) javax.swing.JOptionPane.showInputDialog(null, "Select the report type:", "Generate Patient Load Report", 3, null, reportTypes, reportTypes[0]);
         if (selectedType == null) return;
 
         LocalDate today = LocalDate.now();
-        LocalDate startDate;
-        LocalDate endDate;
+        LocalDate startDate, endDate;
         String reportTitle;
 
         if (selectedType.equals("Weekly Patient Load")) {
@@ -155,6 +178,8 @@ public class DoctorControl {
         parentUI.getMainUI().setVisible(true);
     }
     
+    // --- Private Helper and Validation Methods ---
+
     private Doctor findDoctorById(String id) {
         for (int i = 1; i <= doctorList.getLength(); i++) {
             if (doctorList.getEntry(i).getDoctorID().equals(id)) {
@@ -162,5 +187,27 @@ public class DoctorControl {
             }
         }
         return null;
+    }
+
+    // NEW: Checks if a doctor ID is already in use
+    private boolean isDoctorIdUnique(String id) {
+        for (int i = 1; i <= doctorList.getLength(); i++) {
+            if (doctorList.getEntry(i).getDoctorID().equalsIgnoreCase(id)) {
+                return false; // Found a duplicate
+            }
+        }
+        return true; // ID is unique
+    }
+
+    // NEW: Checks if the name contains only valid characters
+    private boolean isValidName(String name) {
+        // Allows letters (upper and lower), spaces, and periods.
+        return name.matches("[a-zA-Z .]+");
+    }
+
+    // NEW: Checks if the contact number is in a valid format
+    private boolean isValidContactNumber(String contact) {
+        // Allows formats like 0123456789 or 012-3456789
+        return contact.matches("^[0-9]{3}-?[0-9]{7,8}$");
     }
 }
