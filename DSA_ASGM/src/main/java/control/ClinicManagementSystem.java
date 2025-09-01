@@ -14,6 +14,8 @@ import entity.Schedule;
 import entity.Consultation;
 import entity.Treatment;
 import entity.Appointment;
+import entity.DispensedItem;
+import entity.DispensingRecord;
 import entity.Queue;
 import javax.swing.SwingUtilities;
 import utility.ReadWriteFile;
@@ -34,6 +36,8 @@ public class ClinicManagementSystem {
     private static ListInterface<Appointment> appointmentList = new DoublyLinkedList<>();
     private static ListInterface<Consultation> consultationList = new DoublyLinkedList<>();
     private static ListInterface<Treatment> treatmentList = new DoublyLinkedList<>();
+    private static ListInterface<DispensedItem> dispensedItemList = new DoublyLinkedList<>();
+    private static ListInterface<DispensingRecord> dispensingRecordList = new DoublyLinkedList<>();
 
     // --- Data Manager ---
     private static ReadWriteFile readWriteFile = new ReadWriteFile();
@@ -47,7 +51,8 @@ public class ClinicManagementSystem {
         // 1. Load all data from files into the lists
         readWriteFile.loadAllData(
                 patientList, queueList, doctorList, medicineList, scheduleList,
-                appointmentList, consultationList, treatmentList
+                appointmentList, consultationList, treatmentList, dispensedItemList,
+                dispensingRecordList
         );
 
         System.out.println("Data loaded. Appointments found: " + appointmentList.getLength());
@@ -60,7 +65,8 @@ public class ClinicManagementSystem {
                 // Pass all the loaded data to the MainUI
                 new MainUI(
                         patientList, queueList, doctorList, medicineList, scheduleList,
-                        appointmentList, consultationList, treatmentList
+                        appointmentList, consultationList, treatmentList, dispensedItemList,
+                        dispensingRecordList
                 ).setVisible(true);
             }
         });
@@ -75,4 +81,17 @@ public class ClinicManagementSystem {
 //            System.out.println("Data saved successfully.");
 //        }));
     }
+
+    public static ListInterface<Treatment> getTreatmentList() {
+        return treatmentList;
+    }
+
+    public static ListInterface<DispensingRecord> getDispensingRecordList() {
+        return dispensingRecordList;
+    }
+
+    public static ListInterface<Medicine> getMedicineList() {
+        return medicineList;
+    }
+
 }
