@@ -40,6 +40,9 @@ public class ConsultationUI extends JFrame {
     private JTable inConsultationTable;
     private DefaultTableModel inConsultationTableModel;
     private JFrame parentFrame;
+    private ReadWriteFile fileManager;
+    private ConsultationControl consultationControl;
+    private AppointmentControl appointmentControl;
 
     // Data and Control Classes
     private ListInterface<Appointment> fullAppointmentList;
@@ -50,9 +53,6 @@ public class ConsultationUI extends JFrame {
     private ListInterface<Queue> queueList;
     private ListInterface<Schedule> scheduleList;
     private ListInterface<Treatment> treatmentList;
-    private ReadWriteFile fileManager;
-    private ConsultationControl consultationControl;
-    private AppointmentControl appointmentControl;
     private QueueControl queueControl;
 
     // UI Components for Search and Pagination
