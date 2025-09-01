@@ -85,7 +85,7 @@ public class ReadWriteFile {
         readAppointmentsFromFile(APPOINTMENTS_FILE, appointmentList, patientList, doctorList);
         readConsultationsFromFile(CONSULTATIONS_FILE, consultationList, appointmentList, queueList);
         readTreatmentsFromFile(TREATMENTS_FILE, treatmentList, consultationList, medicineList);
-        readDispensingRecordFromFile(DISPENSING_RECORD_FILE, dispensingRecordList, medicineList, consultationList);
+        readDispensingRecordFromFile(DISPENSING_RECORD_FILE, dispensingRecordList, medicineList, treatmentList);
     }
 
     /**
@@ -288,19 +288,24 @@ public class ReadWriteFile {
         }
     }
 
-    public void readDispensingRecordFromFile(String filename, ListInterface<DispensingRecord> dispensingRecordList, ListInterface<Medicine> medicineList, ListInterface<Consultation> consultationList) {
+    public void readDispensingRecordFromFile(String filename, ListInterface<DispensingRecord> dispensingRecordList, ListInterface<Medicine> medicineList, ListInterface<Treatment> treatmentList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
-                if (data.length < 6) {
+                // Change: Expect at least 7 fields (recordID, patient, doctor, time, items, amount, treatmentID)
+                if (data.length < 7) { 
                     continue;
                 }
                 String recordId = data[0];
                 String patientName = data[1];
                 String doctorName = data[2];
-
-                DispensingRecord record = new DispensingRecord(recordId, patientName, doctorName);
+                
+                // New: Find the Treatment object by ID
+                Treatment treatment = findTreatmentById(treatmentList, data[6]);
+                
+                // New constructor call
+                DispensingRecord record = new DispensingRecord(recordId, patientName, doctorName, treatment);
                 record.setDispensingDateTime(LocalDateTime.parse(data[3]));
 
                 String[] itemsData = data[4].split(",");
@@ -313,19 +318,11 @@ public class ReadWriteFile {
                         Medicine medicine = findMedicineById(medicineList, itemParts[0]);
                         int quantity = Integer.parseInt(itemParts[1]);
                         if (medicine != null) {
-                            // This will now correctly calculate the total from zero
                             record.addItem(new DispensedItem(medicine, quantity));
                         }
                     }
-
-                    if (data.length >= 8) {
-                        Consultation consultation = findConsultationById(consultationList, data[6]);
-                        String details = data[7].replace("<br>", "\n");
-                        record.setOriginalConsultation(consultation);
-                        record.setOriginalTreatmentDetails(details);
-                    }
-
                 }
+                record.recalculateTotal();
                 dispensingRecordList.add(record);
             }
         } catch (IOException | NumberFormatException e) {
@@ -486,7 +483,7 @@ public class ReadWriteFile {
         }
     }
 
-    public static void writeDispensingRecordToFile(String filename, ListInterface<DispensingRecord> DispensingRecordList) {
+    public void writeDispensingRecordToFile(String filename, ListInterface<DispensingRecord> DispensingRecordList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             Iterator<DispensingRecord> it = DispensingRecordList.getIterator();
             while (it.hasNext()) {
@@ -505,9 +502,9 @@ public class ReadWriteFile {
                         }
                     }
                 }
-
-                String consultationId = (rec.getOriginalConsultation() != null) ? rec.getOriginalConsultation().getConsultationID() : "N/A";
-                String treatmentDetails = rec.getOriginalTreatmentDetails() != null ? rec.getOriginalTreatmentDetails().replace("\n", "<br>") : "N/A";
+                
+                // Change: Get the treatment ID instead of consultation ID and treatment details
+                String treatmentId = (rec.getTreatment() != null) ? rec.getTreatment().getTreatmentID() : "N/A";
 
                 String line = String.join("|",
                         rec.getRecordId(),
@@ -516,8 +513,7 @@ public class ReadWriteFile {
                         rec.getDispensingDateTime().toString(),
                         itemsStr.toString(),
                         String.valueOf(rec.getTotalAmount()),
-                        consultationId, // NEW field
-                        treatmentDetails // NEW field
+                        treatmentId // New field
                 );
                 writer.write(line);
                 writer.newLine();
@@ -588,6 +584,17 @@ public class ReadWriteFile {
         while (it.hasNext()) {
             Consultation item = it.next();
             if (item.getConsultationID().equals(id)) {
+                return item;
+            }
+        }
+        return null;
+    }
+    
+    private Treatment findTreatmentById(ListInterface<Treatment> list, String id) {
+        Iterator<Treatment> it = list.getIterator();
+        while (it.hasNext()) {
+            Treatment item = it.next();
+            if (item.getTreatmentID().equals(id)) {
                 return item;
             }
         }

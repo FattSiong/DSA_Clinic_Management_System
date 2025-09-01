@@ -18,17 +18,28 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Map;
+import utility.ReadWriteFile;
 
 public class PharmacyManagementSystem {
+
+    private static final String MEDICINES_FILE = "src/main/java/Data File/medicines";
+    private static final String TREATMENTS_FILE = "src/main/java/Data File/treatments";
+    private static final String DISPENSING_RECORD_FILE = "src/main/java/Data File/dispensingRecord";
 
     // Access the central data lists from the main application class
     private ListInterface<DispensingRecord> dispensingRecords = ClinicManagementSystem.getDispensingRecordList();
     private ListInterface<Medicine> medicineList = ClinicManagementSystem.getMedicineList();
     private ListInterface<Treatment> treatmentList = ClinicManagementSystem.getTreatmentList();
+    private ReadWriteFile fileManager;
 
-    public PharmacyManagementSystem() {
-        // Constructor is empty as data is loaded centrally.
+    public PharmacyManagementSystem(ReadWriteFile fileManager) {
+        this.fileManager = fileManager;
+    }
+
+    public void saveData() {
+        fileManager.writeMedicinesToFile(MEDICINES_FILE, medicineList);
+        fileManager.writeTreatmentsToFile(TREATMENTS_FILE, treatmentList);
+        fileManager.writeDispensingRecordToFile(DISPENSING_RECORD_FILE, dispensingRecords);
     }
 
     // ========== Report Generation Logic ==========
@@ -92,15 +103,12 @@ public class PharmacyManagementSystem {
     }
 
     // ========== Medicine CRUD Logic ==========
-    public void addMedicine(String id, String name, String description, int stock, double price, int reorderLvl) throws Exception {
-        if (id.isEmpty() || name.isEmpty()) {
-            throw new Exception("ID and Name cannot be empty.");
-        }
-        if (findMedicineById(id) != null) {
-            throw new Exception("A medicine with ID '" + id + "' already exists.");
-        }
-        Medicine newMedicine = new Medicine(id, name, description, stock, price, reorderLvl);
+    public void addMedicine(String name, String description, int stock, double price, int reorderLvl) throws Exception {
+        String newId = generateNewMedicineId();
+        Medicine newMedicine = new Medicine(newId, name, description, stock, price, reorderLvl);
         medicineList.add(newMedicine);
+        
+        saveData();
     }
 
     public void deleteMedicine(String medicineIdToDelete) throws Exception {
@@ -128,25 +136,25 @@ public class PharmacyManagementSystem {
 
         if (position != -1) {
             medicineList.remove(position);
+            saveData();
         } else {
             throw new Exception("Could not find medicine to delete.");
         }
     }
 
     // ========== Dispensing & Revert Logic ==========
-    public void dispenseFromTreatment(Treatment treatment, java.util.List<Integer> quantities) throws Exception {
+    public void dispenseFromTreatment(Treatment treatment, ListInterface<Integer> quantities) throws Exception {
         String newRecordId = generateNewRecordId();
         Consultation consultation = treatment.getConsultation();
         String patientName = consultation.getPatient() != null ? consultation.getPatient().getName() : "N/A";
         String doctorName = consultation.getDoctor() != null ? consultation.getDoctor().getName() : "N/A";
-        String originalDetails = treatment.getTreatmentDetails();
-        DispensingRecord newRecord = new DispensingRecord(newRecordId, patientName, doctorName, consultation, originalDetails);
+        DispensingRecord newRecord = new DispensingRecord(newRecordId, patientName, doctorName, treatment);
 
         Iterator<Medicine> medIterator = treatment.getPrescribedMedicine().getIterator();
-        int i = 0;
+        int i = 1;
         while (medIterator.hasNext()) {
             Medicine medicine = medIterator.next();
-            int quantity = quantities.get(i);
+            int quantity = quantities.getEntry(i);
             newRecord.addItem(new DispensedItem(medicine, quantity));
             medicine.setStockQuantity(medicine.getStockQuantity() - quantity);
             i++;
@@ -163,11 +171,10 @@ public class PharmacyManagementSystem {
             }
             counter++;
         }
-        if (position != -1) {
-            treatmentList.remove(position);
-        }
-    }
 
+        saveData();
+    }
+    
     public void revertDispensingRecord(String recordId) throws Exception {
         DispensingRecord recordToRevert = findRecordById(recordId);
         if (recordToRevert == null) {
@@ -183,16 +190,6 @@ public class PharmacyManagementSystem {
             prescribedMedicines.add(medicine);
         }
 
-        String newTreatmentId = "T" + recordToRevert.getRecordId().substring(3);
-        String details = recordToRevert.getOriginalTreatmentDetails();
-        Consultation originalConsultation = recordToRevert.getOriginalConsultation();
-        if (originalConsultation == null) {
-            throw new Exception("Cannot revert: Original consultation data is missing.");
-        }
-
-        Treatment newTreatment = new Treatment(newTreatmentId, originalConsultation, details, prescribedMedicines);
-        treatmentList.add(newTreatment);
-
         int position = -1;
         int counter = 1;
         Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
@@ -206,6 +203,8 @@ public class PharmacyManagementSystem {
         if (position != -1) {
             dispensingRecords.remove(position);
         }
+        
+        saveData();
     }
 
     // ========== Helper / Utility Methods ==========
@@ -259,5 +258,28 @@ public class PharmacyManagementSystem {
             }
         }
         return null;
+    }
+    
+    private String generateNewMedicineId() {
+        medicineList.sort();
+
+        if (medicineList.isEmpty()) {
+            return "M1001";
+        }
+        Medicine last = medicineList.getEntry(medicineList.getLength());
+        int lastIdNum = Integer.parseInt(last.getMedicineID().substring(1));
+        return "M" + (lastIdNum + 1);
+    }
+    
+    public String foundTreatmentId(Consultation consultation) {
+        Iterator<Treatment> iterator = treatmentList.getIterator();
+        while (iterator.hasNext()) {
+            Treatment treatment = iterator.next();
+            // Check if the treatment is linked to the given consultationID
+            if (treatment.getConsultation() != null && treatment.getConsultation().getConsultationID().equals(consultation.getConsultationID())) {
+                return treatment.getTreatmentID();
+            }
+        }
+        return null; // Return null if no matching treatment is found
     }
 }
