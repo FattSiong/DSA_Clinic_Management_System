@@ -19,24 +19,22 @@ import entity.DispensedItem;
 public class DispensingRecord implements Comparable<DispensingRecord> {
 
     private String recordId;
+    private Treatment treatment;
     private String patientName;
     private String doctorName;
     private LocalDateTime dispensingDateTime;
     private ListInterface<DispensedItem> dispensedItems;
     private double totalAmount;
-    private Consultation originalConsultation;
-    private String originalTreatmentDetails;
 
     public DispensingRecord(String recordId, String patientName, String doctorName,
-            Consultation originalConsultation, String originalTreatmentDetails) {
+            Treatment treatment) {
         this.recordId = recordId;
         this.patientName = patientName;
         this.doctorName = doctorName;
         this.dispensingDateTime = LocalDateTime.now();
         this.dispensedItems = new DoublyLinkedList<>();
         this.totalAmount = 0.0;
-        this.originalConsultation = originalConsultation;
-        this.originalTreatmentDetails = originalTreatmentDetails;
+        this.treatment = treatment;
     }
 
     // Method to add a medicine to this record
@@ -66,16 +64,12 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
         return totalAmount;
     }
 
+    public Treatment getTreatment() {
+        return treatment;
+    }
+
     public ListInterface<DispensedItem> getDispensedItems() {
         return dispensedItems;
-    }
-
-    public Consultation getOriginalConsultation() {
-        return originalConsultation;
-    }
-
-    public String getOriginalTreatmentDetails() {
-        return originalTreatmentDetails;
     }
 
     //Setters
@@ -103,12 +97,8 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
         this.totalAmount = totalAmount;
     }
 
-    public void setOriginalConsultation(Consultation consultation) {
-        this.originalConsultation = consultation;
-    }
-
-    public void setOriginalTreatmentDetails(String details) {
-        this.originalTreatmentDetails = details;
+    public void setTreatment(Treatment treatment) {
+        this.treatment = treatment;
     }
 
     @Override
@@ -149,12 +139,15 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
     }
 
     /**
-     * NEW (Overloaded) Constructor: For brand-new records or records read from
-     * the old file format that do not have original treatment details.
+     * Overloaded constructor for records from the old file format. This will be
+     * used when reading existing records from file.
+     *
+     * @param recordId
+     * @param patientName
+     * @param doctorName
      */
     public DispensingRecord(String recordId, String patientName, String doctorName) {
-        // This calls the main constructor, passing null for the extra details.
-        this(recordId, patientName, doctorName, null, "N/A");
+        this(recordId, patientName, doctorName, null);
     }
 
     @Override

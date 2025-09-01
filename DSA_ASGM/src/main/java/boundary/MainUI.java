@@ -5,6 +5,7 @@
 package boundary;
 
 import adt.ListInterface; // Make sure to import your ADT package
+import control.TreatmentController;
 import control.PatientControl;
 import control.QueueControl;
 import javax.swing.*;
@@ -121,6 +122,8 @@ public class MainUI extends JFrame {
 
         btnDoctor.addActionListener(e -> {
             System.out.println("Navigating to Doctor Management Module...");
+            new DoctorUI(this, doctorList, scheduleList, appointmentList).setVisible(true); // ✅ add appointmentList
+            this.setVisible(false);
         });
 
         btnConsultation.addActionListener(e -> {
@@ -129,11 +132,20 @@ public class MainUI extends JFrame {
         });
 
         btnTreatment.addActionListener(e -> {
-            System.out.println("Navigating to Medical Treatment Management Module...");
+            // Correct way to launch the module using ECB
+            // 1. Create the controller, giving it ALL the data it needs, including the file manager.
+            TreatmentController treatmentController = new TreatmentController(treatmentList, consultationList, medicineList, fileManager);
+
+            // 2. Create the UI, giving it a reference to the controller and the parent frame.
+            new TreatmentUI(this, treatmentController).setVisible(true);
+            
+            // 3. Hide the main menu.
+            this.setVisible(false);
         });
 
+
         btnPharmacy.addActionListener(e -> {
-            new PharmacyUI(this, dispensingRecordList, medicineList, patientList, doctorList, treatmentList, consultationList).setVisible(true);
+            new PharmacyUI(this, fileManager, dispensingRecordList, medicineList, patientList, doctorList, treatmentList, consultationList).setVisible(true);
             this.setVisible(false);
         });
 
