@@ -13,21 +13,164 @@ import java.util.Iterator;
 
 public class TreatmentController {
 
-    private ListInterface<Treatment> treatmentList;
-    private ListInterface<Consultation> consultationList;
-    private ListInterface<Medicine> medicineList;
-    private ReadWriteFile fileManager;
+    private final ListInterface<Treatment> treatmentList;
+    private final ListInterface<Consultation> consultationList;
+    private final ListInterface<Medicine> medicineList;
+    private final ReadWriteFile fileManager;
+
+    // Helper inner class for aggregating report data
+    private static class ReportItem implements Comparable<ReportItem> {
+        String name;
+        int count;
+
+        ReportItem(String name, int count) {
+            this.name = name;
+            this.count = count;
+        }
+
+        @Override
+        public int compareTo(ReportItem other) {
+            // Compare by count for sorting purposes
+            return Integer.compare(this.count, other.count);
+        }
+    }
 
     public TreatmentController(ListInterface<Treatment> treatmentList, ListInterface<Consultation> consultationList, ListInterface<Medicine> medicineList, ReadWriteFile fileManager) {
         this.treatmentList = treatmentList;
         this.consultationList = consultationList;
         this.medicineList = medicineList;
         this.fileManager = fileManager;
-        
-        // Add this line for debugging
-        System.out.println("TreatmentController initialized. Number of treatments loaded: " + treatmentList.getLength());
     }
 
+    public String generateMedicineFrequencyReport() {
+        ListInterface<ReportItem> reportData = new DoublyLinkedList<>();
+        Iterator<Treatment> treatmentIt = treatmentList.getIterator();
+
+        while (treatmentIt.hasNext()) {
+            Treatment t = treatmentIt.next();
+            if (t == null || t.getPrescribedMedicine() == null) continue;
+
+            Iterator<Medicine> medicineIt = t.getPrescribedMedicine().getIterator();
+            while (medicineIt.hasNext()) {
+                Medicine med = medicineIt.next();
+                if (med == null) continue;
+                
+                String medName = med.getName();
+                ReportItem existingItem = reportData.find(item -> item.name.equals(medName));
+
+                if (existingItem != null) {
+                    existingItem.count++;
+                } else {
+                    reportData.add(new ReportItem(medName, 1));
+                }
+            }
+        }
+
+        reportData.sortDescending(); // Use ADT to sort by count
+
+        StringBuilder report = new StringBuilder();
+        report.append("==============================================\n");
+        report.append("--- Medicine Prescription Frequency Report ---\n");
+        report.append("==============================================\n\n");
+        report.append(String.format("%-27s | %s\n", "Medicine Name", "Times Prescribed"));
+        report.append("==============================================\n");
+
+        if (reportData.isEmpty()) {
+            report.append("No prescription data available.\n");
+        } else {
+            Iterator<ReportItem> reportIt = reportData.getIterator();
+            while(reportIt.hasNext()){
+                ReportItem item = reportIt.next();
+                report.append(String.format("%-27s | %d\n", item.name, item.count));
+            }
+        }
+        
+        report.append("==============================================\n\n");
+        report.append("====================\n");
+        report.append("---Most used list---\n");
+        report.append("    (Top Three)   \n");
+        report.append("====================\n");
+
+        Iterator<ReportItem> topThreeIt = reportData.getIterator();
+        int count = 0;
+        while(topThreeIt.hasNext() && count < 3) {
+            report.append(String.format("%d. %s\n", count + 1, topThreeIt.next().name));
+            count++;
+        }
+        if (count == 0) {
+            report.append("No data to display.\n");
+        }
+
+        report.append("\n==============================================\n");
+        
+        return report.toString();
+    }
+
+    public String generateDiagnosisFrequencyReport(LocalDate startDate, LocalDate endDate) {
+        ListInterface<ReportItem> reportData = new DoublyLinkedList<>();
+        Iterator<Treatment> treatmentIt = treatmentList.getIterator();
+
+        while (treatmentIt.hasNext()) {
+            Treatment t = treatmentIt.next();
+            if (t == null || t.getConsultation() == null) continue;
+            
+            LocalDate consultationDate = t.getConsultation().getConsultationDate();
+
+            if (!consultationDate.isBefore(startDate) && !consultationDate.isAfter(endDate)) {
+                String diagnosis = t.getConsultation().getDiagnosis();
+                if (diagnosis == null || diagnosis.trim().isEmpty()) continue;
+
+                ReportItem existingItem = reportData.find(item -> item.name.equalsIgnoreCase(diagnosis.trim()));
+
+                if (existingItem != null) {
+                    existingItem.count++;
+                } else {
+                    reportData.add(new ReportItem(diagnosis.trim(), 1));
+                }
+            }
+        }
+        
+        reportData.sortDescending(); // Use ADT to sort by count
+
+        StringBuilder report = new StringBuilder();
+        report.append(String.format("=============================================================\n"));
+        report.append(String.format("--- Diagnosis Frequency Report (%s to %s) ---\n", startDate, endDate));
+        report.append(String.format("=============================================================\n\n"));
+        report.append(String.format("%-43s | %s\n", "Diagnosis", "Number of Cases"));
+        report.append("=============================================================\n");
+
+        if (reportData.isEmpty()) {
+            report.append("No diagnosis data available for the selected date range.\n");
+        } else {
+            Iterator<ReportItem> reportIt = reportData.getIterator();
+            while(reportIt.hasNext()){
+                ReportItem item = reportIt.next();
+                report.append(String.format("%-43s | %d\n", item.name, item.count));
+            }
+        }
+        
+        report.append("=============================================================\n\n");
+        report.append("======================\n");
+        report.append("--- Diagnosis list ---\n");
+        report.append("     (Top Three)    \n");
+        report.append("======================\n");
+
+        Iterator<ReportItem> topThreeIt = reportData.getIterator();
+        int count = 0;
+        while(topThreeIt.hasNext() && count < 3) {
+            report.append(String.format("%d. %s\n", count + 1, topThreeIt.next().name));
+            count++;
+        }
+        if (count == 0) {
+            report.append("No data to display.\n");
+        }
+
+        report.append("\n=============================================================\n");
+        
+        return report.toString();
+    }
+    
+    
     public ListInterface<Consultation> getPendingConsultations(LocalDate date, String searchTerm, String searchBy) {
         ListInterface<Consultation> pending = new DoublyLinkedList<>();
         Iterator<Consultation> it = consultationList.getIterator();
@@ -38,7 +181,7 @@ public class TreatmentController {
             
             boolean criteriaMatch;
             if (searchTerm.trim().isEmpty()) {
-                criteriaMatch = true; // Match all if search term is blank
+                criteriaMatch = true; 
             } else {
                 String lowerCaseSearchTerm = searchTerm.toLowerCase();
                 switch (searchBy) {
@@ -198,5 +341,4 @@ public class TreatmentController {
         return true;
     }
 }
-
 

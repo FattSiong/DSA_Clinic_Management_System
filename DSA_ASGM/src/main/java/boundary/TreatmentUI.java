@@ -57,12 +57,11 @@ public class TreatmentUI extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // --- Search and Actions Panel (NORTH) ---
+        // --- Search Panel (NORTH) ---
         JPanel topPanel = new JPanel(new BorderLayout(10, 0));
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Search By:"));
         
-        // Initialize and add the search criteria dropdown
         String[] searchOptions = {"Patient IC", "Patient Name", "Doctor Name"};
         cmbSearchBy = new JComboBox<>(searchOptions);
         searchPanel.add(cmbSearchBy);
@@ -73,14 +72,7 @@ public class TreatmentUI extends JFrame {
         searchPanel.add(tfSearch);
         searchPanel.add(btnSearch);
         searchPanel.add(btnClear);
-        topPanel.add(searchPanel, BorderLayout.WEST);
-
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnCreate = new JButton("Create Treatment Record");
-        btnHistory = new JButton("View Treatment History");
-        actionPanel.add(btnCreate);
-        actionPanel.add(btnHistory);
-        topPanel.add(actionPanel, BorderLayout.EAST);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
         
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
@@ -96,6 +88,17 @@ public class TreatmentUI extends JFrame {
 
         // --- Navigation Panel (SOUTH) ---
         JPanel navPanel = new JPanel(new BorderLayout());
+        
+        // FIX: Create a separate panel for the left-side buttons
+        JPanel leftActionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        btnCreate = new JButton("Create Treatment Record");
+        btnHistory = new JButton("View Treatment History");
+        btnBack = new JButton("Back to Main Menu");
+        leftActionPanel.add(btnCreate);
+        leftActionPanel.add(btnHistory);
+        leftActionPanel.add(btnBack);
+        navPanel.add(leftActionPanel, BorderLayout.WEST);
+
         JPanel paginationControls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnPrev = new JButton("< Prev");
         btnNext = new JButton("Next >");
@@ -104,9 +107,6 @@ public class TreatmentUI extends JFrame {
         paginationControls.add(lblPageInfo);
         paginationControls.add(btnNext);
         navPanel.add(paginationControls, BorderLayout.EAST);
-        
-        btnBack = new JButton("Back to Main Menu");
-        navPanel.add(btnBack, BorderLayout.WEST);
 
         mainPanel.add(navPanel, BorderLayout.SOUTH);
 

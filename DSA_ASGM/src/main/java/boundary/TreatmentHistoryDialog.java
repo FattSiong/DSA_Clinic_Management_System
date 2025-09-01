@@ -4,10 +4,13 @@ package boundary;
 import adt.ListInterface;
 import control.TreatmentController;
 import entity.Treatment;
+// utility.DatePicker is no longer needed
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -21,29 +24,33 @@ public class TreatmentHistoryDialog extends JDialog {
     private DefaultTableModel treatmentTableModel;
     private JComboBox<String> cmbSearchBy;
     private JTextField tfSearchTerm;
-    private JButton btnSearch, btnClear, btnEdit, btnDelete, btnClose;
+    private JComboBox<String> cmbReportType;
+    private JTextField tfStartDate; // Reverted to JTextField
+    private JTextField tfEndDate;   // Reverted to JTextField
+    private JPanel datePanel;
 
     public TreatmentHistoryDialog(Frame owner, TreatmentController controller) {
-        super(owner, "Treatment History", true);
+        super(owner, "Treatment History and Reports", true);
         this.owner = owner;
         this.treatmentController = controller;
 
-        setSize(900, 600);
+        setSize(900, 700);
         setLocationRelativeTo(owner);
         setLayout(new BorderLayout(10, 10));
 
         initComponents();
-        addListeners();
-        populateTreatments("", "Patient Name"); // Initial population
+        populateTreatments("", "Patient Name");
     }
 
     private void initComponents() {
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
         // --- Search Panel (NORTH) ---
         JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
-        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
-
+        
         JPanel searchControls = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchControls.add(new JLabel("Search By:"));
+        searchControls.add(new JLabel("Search History By:"));
         String[] searchOptions = {"Patient Name", "Doctor Name", "Treatment ID"};
         cmbSearchBy = new JComboBox<>(searchOptions);
         searchControls.add(cmbSearchBy);
@@ -53,39 +60,71 @@ public class TreatmentHistoryDialog extends JDialog {
         searchPanel.add(tfSearchTerm, BorderLayout.CENTER);
 
         JPanel searchButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnSearch = new JButton("Search");
-        btnClear = new JButton("Clear");
+        JButton btnSearch = new JButton("Search");
+        JButton btnClear = new JButton("Clear");
         searchButtons.add(btnSearch);
         searchButtons.add(btnClear);
         searchPanel.add(searchButtons, BorderLayout.EAST);
+        mainPanel.add(searchPanel, BorderLayout.NORTH);
 
-        add(searchPanel, BorderLayout.NORTH);
+        // --- Center Panel with Split Pane ---
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        splitPane.setResizeWeight(0.8);
 
-        // --- Table Panel (CENTER) ---
+        // --- Table Panel (Top of Split Pane) ---
         String[] columnNames = {"ID", "Patient", "Doctor", "Date", "Details", "Medicines"};
         treatmentTableModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         treatmentTable = new JTable(treatmentTableModel);
         treatmentTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        add(new JScrollPane(treatmentTable), BorderLayout.CENTER);
+        JScrollPane tableScrollPane = new JScrollPane(treatmentTable);
+        tableScrollPane.setBorder(BorderFactory.createTitledBorder("Treatment Records"));
+        splitPane.setTopComponent(tableScrollPane);
+        
+        // --- Report Control Panel (Bottom of Split Pane) ---
+        JPanel reportControlPanel = new JPanel(new BorderLayout(10, 5));
+        reportControlPanel.setBorder(BorderFactory.createTitledBorder("Reports"));
+        
+        datePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        datePanel.add(new JLabel("Start Date (YYYY-MM-DD):"));
+        tfStartDate = new JTextField(10); // Use JTextField
+        tfStartDate.setText(LocalDate.now().minusMonths(1).toString());
+        datePanel.add(tfStartDate);
+        datePanel.add(new JLabel("End Date (YYYY-MM-DD):"));
+        tfEndDate = new JTextField(10); // Use JTextField
+        tfEndDate.setText(LocalDate.now().toString());
+        datePanel.add(tfEndDate);
+        datePanel.setVisible(true);
+        reportControlPanel.add(datePanel, BorderLayout.NORTH);
+
+        JPanel generationControls = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        generationControls.add(new JLabel("Report Type:"));
+        cmbReportType = new JComboBox<>(new String[]{"Diagnosis Frequency", "Medicine Prescription Frequency"});
+        generationControls.add(cmbReportType);
+        JButton btnGenerateReport = new JButton("Generate Report");
+        generationControls.add(btnGenerateReport);
+        reportControlPanel.add(generationControls, BorderLayout.CENTER);
+
+        splitPane.setBottomComponent(reportControlPanel);
+
+        mainPanel.add(splitPane, BorderLayout.CENTER);
 
         // --- Action Button Panel (SOUTH) ---
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actionPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
-        btnEdit = new JButton("Edit Selected");
-        btnDelete = new JButton("Delete Selected");
-        btnClose = new JButton("Close");
-        actionPanel.add(btnEdit);
-        actionPanel.add(btnDelete);
-        actionPanel.add(btnClose);
-        add(actionPanel, BorderLayout.SOUTH);
-    }
+        JPanel actionPanel = new JPanel(new BorderLayout());
+        JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnEdit = new JButton("Edit Selected");
+        JButton btnDelete = new JButton("Delete Selected");
+        JButton btnClose = new JButton("Close");
+        rightButtons.add(btnEdit);
+        rightButtons.add(btnDelete);
+        rightButtons.add(btnClose);
+        actionPanel.add(rightButtons, BorderLayout.EAST);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+        
+        add(mainPanel);
 
-    private void addListeners() {
+        // Add Listeners
         btnSearch.addActionListener(e -> searchTreatments());
         btnClear.addActionListener(e -> {
             tfSearchTerm.setText("");
@@ -93,13 +132,46 @@ public class TreatmentHistoryDialog extends JDialog {
             populateTreatments("", "Patient Name");
         });
         btnClose.addActionListener(e -> dispose());
-
         btnDelete.addActionListener(e -> deleteSelectedTreatment());
         btnEdit.addActionListener(e -> editSelectedTreatment());
+        btnGenerateReport.addActionListener(e -> generateAndShowReport());
+
+        cmbReportType.addActionListener(e -> {
+            boolean isDiagnosisReport = "Diagnosis Frequency".equals(cmbReportType.getSelectedItem());
+            datePanel.setVisible(isDiagnosisReport);
+        });
+    }
+
+    private void generateAndShowReport() {
+        String reportType = Objects.requireNonNull(cmbReportType.getSelectedItem()).toString();
+        String reportText;
+
+        if ("Medicine Prescription Frequency".equals(reportType)) {
+            reportText = treatmentController.generateMedicineFrequencyReport();
+        } else if ("Diagnosis Frequency".equals(reportType)) {
+            try {
+                LocalDate startDate = LocalDate.parse(tfStartDate.getText()); // Get date from text field
+                LocalDate endDate = LocalDate.parse(tfEndDate.getText());   // Get date from text field
+                
+                if (endDate.isBefore(startDate)) {
+                     JOptionPane.showMessageDialog(this, "End date cannot be before start date.", "Invalid Date Range", JOptionPane.ERROR_MESSAGE);
+                     return;
+                }
+                reportText = treatmentController.generateDiagnosisFrequencyReport(startDate, endDate);
+            } catch (DateTimeParseException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid date format. Please use YYYY-MM-DD.", "Date Format Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        } else {
+            reportText = "Invalid report type selected.";
+        }
+        
+        ReportDisplayDialog displayDialog = new ReportDisplayDialog(this.owner, reportType, reportText);
+        displayDialog.setVisible(true);
     }
 
     private void populateTreatments(String searchTerm, String searchBy) {
-        treatmentTableModel.setRowCount(0); // Clear table
+        treatmentTableModel.setRowCount(0);
         ListInterface<Treatment> treatments = treatmentController.searchTreatments(searchTerm, searchBy);
 
         Iterator<Treatment> it = treatments.getIterator();
@@ -126,7 +198,7 @@ public class TreatmentHistoryDialog extends JDialog {
     private void deleteSelectedTreatment() {
         int selectedRow = treatmentTable.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a treatment to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Please select a treatment from the table to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -140,7 +212,7 @@ public class TreatmentHistoryDialog extends JDialog {
             boolean success = treatmentController.deleteTreatment(treatmentId);
             if (success) {
                 JOptionPane.showMessageDialog(this, "Treatment deleted successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                populateTreatments(tfSearchTerm.getText(), (String) cmbSearchBy.getSelectedItem()); // Refresh list
+                populateTreatments(tfSearchTerm.getText(), (String) cmbSearchBy.getSelectedItem());
             } else {
                 JOptionPane.showMessageDialog(this, "Failed to delete treatment.", "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -150,7 +222,7 @@ public class TreatmentHistoryDialog extends JDialog {
     private void editSelectedTreatment() {
         int selectedRow = treatmentTable.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a treatment to edit.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Please select a treatment from the table to edit.", "No Selection", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -158,12 +230,12 @@ public class TreatmentHistoryDialog extends JDialog {
         Treatment treatmentToEdit = treatmentController.findTreatmentById(treatmentId);
 
         if (treatmentToEdit != null) {
-            EditTreatmentDialog editDialog = new EditTreatmentDialog(owner, treatmentController, treatmentToEdit);
+            EditTreatmentDialog editDialog = new EditTreatmentDialog(this.owner, treatmentController, treatmentToEdit);
             editDialog.setVisible(true);
-            // After the dialog closes, refresh the list to show any changes
             populateTreatments(tfSearchTerm.getText(), (String) cmbSearchBy.getSelectedItem());
         } else {
             JOptionPane.showMessageDialog(this, "Could not find the selected treatment.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
+
