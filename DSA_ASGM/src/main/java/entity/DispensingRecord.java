@@ -24,14 +24,19 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
     private LocalDateTime dispensingDateTime;
     private ListInterface<DispensedItem> dispensedItems;
     private double totalAmount;
+    private Consultation originalConsultation;
+    private String originalTreatmentDetails;
 
-    public DispensingRecord(String recordId, String patientName, String doctorName) {
+    public DispensingRecord(String recordId, String patientName, String doctorName,
+            Consultation originalConsultation, String originalTreatmentDetails) {
         this.recordId = recordId;
         this.patientName = patientName;
         this.doctorName = doctorName;
         this.dispensingDateTime = LocalDateTime.now();
         this.dispensedItems = new DoublyLinkedList<>();
         this.totalAmount = 0.0;
+        this.originalConsultation = originalConsultation;
+        this.originalTreatmentDetails = originalTreatmentDetails;
     }
 
     // Method to add a medicine to this record
@@ -65,29 +70,45 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
         return dispensedItems;
     }
 
+    public Consultation getOriginalConsultation() {
+        return originalConsultation;
+    }
+
+    public String getOriginalTreatmentDetails() {
+        return originalTreatmentDetails;
+    }
+
     //Setters
     public void setRecordId(String recordId) {
         this.recordId = recordId;
     }
-    
+
     public void setPatientName(String patientName) {
         this.patientName = patientName;
     }
-    
+
     public void setDoctorName(String doctorName) {
         this.doctorName = doctorName;
     }
-    
+
     public void setDispensingDateTime(LocalDateTime dispensingDateTime) {
         this.dispensingDateTime = dispensingDateTime;
     }
-    
+
     public void setDispensedItems(ListInterface dispensedItems) {
         this.dispensedItems = dispensedItems;
     }
-    
+
     public void setTotalAmount(double totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public void setOriginalConsultation(Consultation consultation) {
+        this.originalConsultation = consultation;
+    }
+
+    public void setOriginalTreatmentDetails(String details) {
+        this.originalTreatmentDetails = details;
     }
 
     @Override
@@ -111,6 +132,29 @@ public class DispensingRecord implements Comparable<DispensingRecord> {
         sb.append(String.format("Total Amount: $%.2f\n", totalAmount));
         sb.append("==============================================\n");
         return sb.toString();
+    }
+
+    /**
+     * Recalculates the total amount of the record by summing up the subtotals
+     * of all dispensed items. This is used after a record is updated.
+     */
+    public void recalculateTotal() {
+        this.totalAmount = 0.0; // Reset the total
+        if (dispensedItems != null) {
+            Iterator<DispensedItem> iterator = dispensedItems.getIterator();
+            while (iterator.hasNext()) {
+                this.totalAmount += iterator.next().getSubtotal();
+            }
+        }
+    }
+
+    /**
+     * NEW (Overloaded) Constructor: For brand-new records or records read from
+     * the old file format that do not have original treatment details.
+     */
+    public DispensingRecord(String recordId, String patientName, String doctorName) {
+        // This calls the main constructor, passing null for the extra details.
+        this(recordId, patientName, doctorName, null, "N/A");
     }
 
     @Override

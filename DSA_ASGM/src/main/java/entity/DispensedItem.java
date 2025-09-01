@@ -41,6 +41,10 @@ public class DispensedItem implements Comparable<DispensedItem> {
         this.recordId = recordId;
     }
 
+    public void setQuantityDispensed(int quantityDispensed) {
+        this.quantityDispensed = quantityDispensed;
+    }
+
     @Override
     public int compareTo(DispensedItem other) {
         return 0;
