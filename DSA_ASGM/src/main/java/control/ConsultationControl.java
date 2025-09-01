@@ -8,6 +8,8 @@ import adt.ListInterface;
 import adt.DoublyLinkedList;
 import entity.Appointment;
 import entity.Consultation;
+import entity.Doctor;
+import entity.Patient;
 import entity.Queue;
 import entity.Schedule;
 import entity.Treatment;
@@ -27,6 +29,8 @@ public class ConsultationControl {
     private ListInterface<Queue> queueList;
     private ListInterface<Schedule> scheduleList;
     private ListInterface<Treatment> treatmentList;
+    private ListInterface<Patient> patientList;
+    private ListInterface<Doctor> doctorList;
     private ReadWriteFile fileManager;
     
     private static final String QUEUES_FILE = "src/main/java/Data File/queues";
@@ -34,12 +38,14 @@ public class ConsultationControl {
     private static final String APPOINTMENTS_FILE = "src/main/java/Data File/appointments";
     private static final String CONSULTATIONS_FILE = "src/main/java/Data File/consultations";
     
-    public ConsultationControl(ListInterface<Appointment> appList, ListInterface<Consultation> conList, ListInterface<Queue> qList, ListInterface<Schedule> sList, ListInterface<Treatment> tList, ReadWriteFile fileManager) {
+    public ConsultationControl(ListInterface<Appointment> appList, ListInterface<Consultation> conList, ListInterface<Queue> qList, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Schedule> sList, ListInterface<Treatment> tList, ReadWriteFile fileManager) {
         this.appointmentList = appList;
         this.consultationList = conList;
         this.queueList = qList;
         this.scheduleList = sList;
         this.treatmentList = tList;
+        this.patientList = pList;
+        this.doctorList = dList;
         this.fileManager = fileManager;
 
     }
@@ -55,6 +61,19 @@ public class ConsultationControl {
     
     public ListInterface<Treatment> getTreatmentList() {
         return treatmentList;
+    }
+    
+    /**
+     * Clears the current queue list and reloads it from the data file.
+     * This ensures the UI has the freshest data.
+     */
+    public void loadQueueData() {
+        // Clear the existing list before reloading
+        if (queueList != null) {
+            queueList.clear();
+        }
+        // Call the file manager to read the data into the list
+        fileManager.readQueuesFromFile(QUEUES_FILE, queueList, patientList, doctorList);
     }
     
     /**

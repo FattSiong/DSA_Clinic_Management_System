@@ -9,6 +9,7 @@ import adt.DoublyLinkedList;
 import entity.Appointment;
 import entity.Doctor;
 import entity.Patient;
+import entity.Schedule;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -24,16 +25,18 @@ public class AppointmentControl {
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Patient> patientList;
     private ListInterface<Doctor> doctorList;
+    private ListInterface<Schedule> scheduleList;
     private ReadWriteFile fileManager;
 
     private static final String PATIENT_FILE = "src/main/java/Data File/patients";
     private static final String APPOINTMENT_FILE = "src/main/java/Data File/appointments";
     private static final String DOCTOR_FILE = "src/main/java/Data File/doctors";
 
-    public AppointmentControl(ListInterface<Appointment> aList, ListInterface<Patient> pList, ListInterface<Doctor> dList, ReadWriteFile manager) {
+    public AppointmentControl(ListInterface<Appointment> aList, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Schedule> sList, ReadWriteFile manager) {
         this.patientList = pList;
         this.doctorList = dList;
         this.appointmentList = aList;
+        this.scheduleList = sList;
         this.fileManager = manager;
 
     }
@@ -132,6 +135,10 @@ public class AppointmentControl {
         if (selectedDateTime.isBefore(LocalDateTime.now())) {
             return "Error: Cannot book an appointment in the past.";
         }
+        
+        if (!isDoctorOnDuty(doctorId, date, time)) {
+            return "Error: The selected doctor is not scheduled to be on duty at this time.";
+        }
 
         // --- Business Logic: Check for scheduling conflicts ---
         Iterator<Appointment> it = appointmentList.getIterator();
@@ -159,6 +166,26 @@ public class AppointmentControl {
         fileManager.writeAppointmentsToFile(APPOINTMENT_FILE, appointmentList);
 
         return "Success: Appointment " + newId + " booked successfully!";
+    }
+    
+    /**
+     * A private helper method to check if a doctor is scheduled to work at a
+     * given date and time.
+     */
+    private boolean isDoctorOnDuty(String doctorId, LocalDate date, LocalTime time) {
+        Iterator<Schedule> it = scheduleList.getIterator();
+        while (it.hasNext()) {
+            Schedule s = it.next();
+            // Find the schedule for the correct doctor on the correct date
+            if (s.getDoctor().getDoctorID().equals(doctorId) && s.getDutyDate().equals(date)) {
+                // Check if the appointment time is within the doctor's shift
+                // A time is valid if it's NOT before the start AND it IS before the end.
+                if (!time.isBefore(s.getStartTime()) && time.isBefore(s.getEndTime())) {
+                    return true; // The doctor is on duty.
+                }
+            }
+        }
+        return false; // No matching schedule found.
     }
 
     // --- Helper Methods ---
@@ -265,6 +292,10 @@ public class AppointmentControl {
         LocalDateTime newDateTime = LocalDateTime.of(newDate, newTime);
         if (newDateTime.isBefore(LocalDateTime.now())) {
             return "Error: Cannot schedule an appointment in the past.";
+        }
+        
+        if (!isDoctorOnDuty(newDoctorId, newDate, newTime)) {
+            return "Error: The selected doctor is not scheduled to be on duty at the new time.";
         }
 
         // --- Business Logic: Check for scheduling conflicts ---

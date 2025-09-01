@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import javax.swing.table.TableCellRenderer;
 import boundary.ConsultationUI;
+import entity.Schedule;
 
 /**
  *
@@ -34,6 +35,7 @@ public class ManageAppointmentUI extends JFrame {
     private DefaultTableModel tableModel;
     private ListInterface<Appointment> fullAppointmentList;
     private ListInterface<Appointment> filteredAppointmentList;
+    private ListInterface<Schedule> scheduleList;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Patient> patientList;
     private ReadWriteFile fileManager;
@@ -51,7 +53,7 @@ public class ManageAppointmentUI extends JFrame {
     private int lastSortedColumn = -1;
     private boolean isAscending = true;
 
-    public ManageAppointmentUI(JFrame parentFrame, ConsultationUI parentUI, ListInterface<Appointment> appList, ListInterface<Patient> pList, ListInterface<Doctor> dList, ReadWriteFile fileManager) {
+    public ManageAppointmentUI(JFrame parentFrame, ConsultationUI parentUI, ListInterface<Appointment> appList, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Schedule> sList, ReadWriteFile fileManager) {
         this.parentFrame = parentFrame;
         this.parentUI = parentUI;
         this.fullAppointmentList = appList;
@@ -59,7 +61,7 @@ public class ManageAppointmentUI extends JFrame {
         this.fileManager = fileManager;
         this.patientList = pList;
         this.doctorList = dList;
-        this.appointmentControl = new AppointmentControl(appList, pList, dList, fileManager);
+        this.appointmentControl = new AppointmentControl(appList, pList, dList, sList, fileManager);
 
         setTitle("Manage All Appointments");
         setSize(900, 700);
