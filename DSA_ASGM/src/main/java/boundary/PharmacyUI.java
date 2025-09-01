@@ -4,6 +4,7 @@
  */
 package boundary;
 
+import adt.DoublyLinkedList;
 import adt.ListInterface;
 import control.PharmacyManagementSystem;
 import control.ClinicManagementSystem;
@@ -11,13 +12,12 @@ import entity.*;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.util.Comparator;
+import utility.ReadWriteFile;
 
 public class PharmacyUI extends JFrame {
 
@@ -34,13 +34,14 @@ public class PharmacyUI extends JFrame {
     private ListInterface<Treatment> treatmentList;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Patient> patientList;
+    private ReadWriteFile fileManager;
 
     private JFrame parentFrame;
 
-    public PharmacyUI(JFrame parent, ListInterface<DispensingRecord> dispensingRecords, ListInterface<Medicine> medicineList, ListInterface<Patient> patientList,
+    public PharmacyUI(JFrame parent, ReadWriteFile fileManager, ListInterface<DispensingRecord> dispensingRecords, ListInterface<Medicine> medicineList, ListInterface<Patient> patientList,
             ListInterface<Doctor> doctorList, ListInterface<Treatment> treatmentList, ListInterface<Consultation> consultationList) {
         this.parentFrame = parent;
-        this.pharmacyController = new PharmacyManagementSystem();
+        this.pharmacyController = new PharmacyManagementSystem(fileManager);
 
         // Get references to the central data lists
         this.dispensingRecords = ClinicManagementSystem.getDispensingRecordList();
@@ -600,73 +601,14 @@ public class PharmacyUI extends JFrame {
             loadRecordData();
             loadMedicineData();
 
+            pharmacyController.saveData();
+
             dialog.dispose();
             JOptionPane.showMessageDialog(this, "Record updated successfully!");
         });
 
         btnCancel.addActionListener(e -> dialog.dispose());
         dialog.setVisible(true);
-    }
-
-    private void revertDispensingRecord(String recordId) {
-        // 1. Find the Dispensing Record to revert
-        int position = -1;
-        int counter = 1;
-        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
-        DispensingRecord recordToRevert = null;
-
-        while (iterator.hasNext()) {
-            DispensingRecord record = iterator.next();
-            if (record.getRecordId().equals(recordId)) {
-                position = counter;
-                recordToRevert = record;
-                break;
-            }
-            counter++;
-        }
-
-        if (position != -1 && recordToRevert != null) {
-            // --- THIS IS THE CORRECTED LOGIC ---
-
-            // 2. Create a NEW list and populate it by iterating through ALL items
-            ListInterface<Medicine> prescribedMedicines = new adt.DoublyLinkedList<>();
-            Iterator<DispensedItem> itemIterator = recordToRevert.getDispensedItems().getIterator();
-
-            while (itemIterator.hasNext()) {
-                DispensedItem item = itemIterator.next();
-                Medicine medicine = item.getMedicine();
-
-                // Action A: Return the item's quantity back to the main stock
-                medicine.setStockQuantity(medicine.getStockQuantity() + item.getQuantityDispensed());
-
-                // Action B: Add the medicine to our list for the new treatment
-                prescribedMedicines.add(medicine);
-            }
-
-            // 3. Create the new Treatment Record with the complete list of medicines
-            String newTreatmentId = "T" + recordToRevert.getRecordId().substring(3);
-            String details = recordToRevert.getOriginalTreatmentDetails();
-            Consultation originalConsultation = recordToRevert.getOriginalConsultation();
-
-            if (originalConsultation == null) {
-                JOptionPane.showMessageDialog(this, "Cannot revert: Original consultation data is missing.", "Revert Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            // Pass the fully populated 'prescribedMedicines' list here
-            Treatment newTreatment = new Treatment(newTreatmentId, originalConsultation, details, prescribedMedicines);
-            control.ClinicManagementSystem.getTreatmentList().add(newTreatment);
-
-            // 4. Remove the old Dispensing Record
-            dispensingRecords.remove(position);
-
-            // 5. Refresh all tables to show the changes
-            loadRecordData();
-            loadMedicineData();
-            loadTreatmentData();
-
-            JOptionPane.showMessageDialog(this, "Record " + recordId + " has been reverted to Treatment Record " + newTreatmentId + ".");
-        }
     }
 
     // ========== Data Loading and Helper Methods ==========
@@ -718,6 +660,7 @@ public class PharmacyUI extends JFrame {
                 medicine.setPrice(Double.parseDouble(priceField.getText()));
                 medicine.setReorderLvl(Integer.parseInt(reorderLvlField.getText()));
                 loadMedicineData();
+                pharmacyController.saveData();
                 JOptionPane.showMessageDialog(this, "Medicine details updated successfully!");
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Invalid input. Please check price and reorder level.", "Input Error", JOptionPane.ERROR_MESSAGE);
@@ -740,6 +683,7 @@ public class PharmacyUI extends JFrame {
                 }
                 medicine.setStockQuantity(newStock);
                 loadMedicineData();
+                pharmacyController.saveData();
                 JOptionPane.showMessageDialog(this, "Stock updated successfully. New quantity: " + newStock);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Invalid input. Please enter a valid integer.", "Input Error", JOptionPane.ERROR_MESSAGE);
@@ -760,6 +704,7 @@ public class PharmacyUI extends JFrame {
         fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));
         fieldsPanel.setBorder(BorderFactory.createTitledBorder("Confirm Quantities"));
 
+        // Change: Use a standard Java List to hold the JSpinner UI components
         java.util.List<JSpinner> quantitySpinners = new java.util.ArrayList<>();
         Iterator<Medicine> medIterator = treatment.getPrescribedMedicine().getIterator();
 
@@ -784,15 +729,15 @@ public class PharmacyUI extends JFrame {
         dialog.pack();
         dialog.setLocationRelativeTo(this);
 
-        // --- REFACTORED AND CORRECTED Action Listener ---
         btnConfirmDispense.addActionListener(e -> {
             try {
-                // Collect quantities from spinners
-                List<Integer> quantities = new ArrayList<>();
+                // Create a new DoublyLinkedList and populate it with the Integer values from the spinners
+                ListInterface<Integer> quantities = new DoublyLinkedList<>();
                 for (JSpinner spinner : quantitySpinners) {
                     quantities.add((Integer) spinner.getValue());
                 }
-                // Call controller to perform the action
+
+                // Pass your custom ADT list to the controller
                 pharmacyController.dispenseFromTreatment(treatment, quantities);
                 loadAllTables();
                 dialog.dispose();
@@ -924,8 +869,6 @@ public class PharmacyUI extends JFrame {
 
         // Layout the fields in a panel
         JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
-        panel.add(new JLabel("Medicine ID (e.g., M1005):"));
-        panel.add(idField);
         panel.add(new JLabel("Name:"));
         panel.add(nameField);
         panel.add(new JLabel("Description:"));
@@ -949,7 +892,7 @@ public class PharmacyUI extends JFrame {
                 double price = Double.parseDouble(priceField.getText());
                 int reorderLvl = Integer.parseInt(reorderLvlField.getText());
 
-                pharmacyController.addMedicine(id, name, description, stock, price, reorderLvl);
+                pharmacyController.addMedicine(name, description, stock, price, reorderLvl);
                 loadMedicineData();
                 JOptionPane.showMessageDialog(this, "New medicine added successfully!");
             } catch (NumberFormatException ex) {
@@ -960,7 +903,18 @@ public class PharmacyUI extends JFrame {
         }
     }
 
-    //Add the new method to load treatment data into the table
+    private boolean isTreatmentDispensed(String treatmentId) {
+        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
+        while (iterator.hasNext()) {
+            DispensingRecord record = iterator.next();
+            // Check if the DispensingRecord is linked to a Treatment and if the IDs match
+            if (record.getTreatment() != null && record.getTreatment().getTreatmentID().equals(treatmentId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void loadTreatmentData() {
         if (treatmentTableModel == null) {
             return; // Defensive check
@@ -971,22 +925,26 @@ public class PharmacyUI extends JFrame {
         while (iterator.hasNext()) {
             Treatment treatment = iterator.next();
 
-            // Format the list of prescribed medicines into a single string
-            StringBuilder medIDs = new StringBuilder();
-            Iterator<Medicine> medIterator = treatment.getPrescribedMedicine().getIterator();
-            while (medIterator.hasNext()) {
-                medIDs.append(medIterator.next().getMedicineID());
-                if (medIterator.hasNext()) {
-                    medIDs.append(", ");
-                }
-            }
+            // Only load the treatment if it has NOT been dispensed
+            if (!isTreatmentDispensed(treatment.getTreatmentID())) {
 
-            treatmentTableModel.addRow(new Object[]{
-                treatment.getTreatmentID(),
-                treatment.getConsultation() != null ? treatment.getConsultation().getConsultationID() : "N/A",
-                treatment.getTreatmentDetails(),
-                medIDs.toString()
-            });
+                // Format the list of prescribed medicines into a single string
+                StringBuilder medIDs = new StringBuilder();
+                Iterator<Medicine> medIterator = treatment.getPrescribedMedicine().getIterator();
+                while (medIterator.hasNext()) {
+                    medIDs.append(medIterator.next().getMedicineID());
+                    if (medIterator.hasNext()) {
+                        medIDs.append(", ");
+                    }
+                }
+
+                treatmentTableModel.addRow(new Object[]{
+                    treatment.getTreatmentID(),
+                    treatment.getConsultation() != null ? treatment.getConsultation().getConsultationID() : "N/A",
+                    treatment.getTreatmentDetails(),
+                    medIDs.toString()
+                });
+            }
         }
     }
 

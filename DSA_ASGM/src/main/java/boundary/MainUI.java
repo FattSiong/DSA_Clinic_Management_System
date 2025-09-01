@@ -133,7 +133,7 @@ public class MainUI extends JFrame {
         });
 
         btnPharmacy.addActionListener(e -> {
-            new PharmacyUI(this, dispensingRecordList, medicineList, patientList, doctorList, treatmentList, consultationList).setVisible(true);
+            new PharmacyUI(this, fileManager, dispensingRecordList, medicineList, patientList, doctorList, treatmentList, consultationList).setVisible(true);
             this.setVisible(false);
         });
 
