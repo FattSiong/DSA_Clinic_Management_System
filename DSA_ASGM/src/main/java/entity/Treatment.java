@@ -4,6 +4,7 @@
  */
 package entity;
 
+import adt.DoublyLinkedList;
 import adt.ListInterface;
 import java.util.Iterator;
 
@@ -17,13 +18,32 @@ public class Treatment implements Comparable<Treatment> {
     private Consultation consultation; // Link to the consultation
     private String treatmentDetails;
 
+    // THE FIX: This must NOT be static. It's an instance variable.
     private ListInterface<Medicine> prescribedMedicine;
 
+    // Main constructor
     public Treatment(String treatmentID, Consultation consultation, String treatmentDetails, ListInterface<Medicine> prescribedMedicine) {
         this.treatmentID = treatmentID;
         this.consultation = consultation;
         this.treatmentDetails = treatmentDetails;
-        this.prescribedMedicine = prescribedMedicine;
+        this.prescribedMedicine = prescribedMedicine; // Assigns the unique list for this instance
+
+        // --- THE FIX: Create a new, independent copy of the medicine list ---
+        this.prescribedMedicine = new DoublyLinkedList<>();
+        if (prescribedMedicine != null) {
+            Iterator<Medicine> iterator = prescribedMedicine.getIterator();
+            while (iterator.hasNext()) {
+                this.prescribedMedicine.add(iterator.next());
+            }
+        }
+    }
+
+    // Constructor for reverted treatments
+    public Treatment(String treatmentID, String treatmentDetails, ListInterface<Medicine> prescribedMedicine) {
+        this.treatmentID = treatmentID;
+        this.consultation = null;
+        this.treatmentDetails = treatmentDetails;
+        this.prescribedMedicine = prescribedMedicine; // Assigns the unique list for this instance
     }
 
     // Getters
@@ -64,7 +84,7 @@ public class Treatment implements Comparable<Treatment> {
     public int compareTo(Treatment other) {
         return this.treatmentID.compareTo(other.getTreatmentID());
     }
-    
+
     @Override
     public String toString() {
         // Build the string for the list of medicines manually using the iterator
