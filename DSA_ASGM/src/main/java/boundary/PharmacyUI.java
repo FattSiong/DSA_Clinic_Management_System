@@ -5,47 +5,47 @@
 package boundary;
 
 import adt.ListInterface;
-import entity.DispensedItem;
-import entity.DispensingRecord;
-import entity.Doctor;
-import entity.Medicine;
-import entity.Patient;
+import control.PharmacyManagementSystem;
+import control.ClinicManagementSystem;
+import entity.*;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.DefaultRowSorter;
-import javax.swing.RowFilter;
-import javax.swing.SortOrder;
 import javax.swing.table.TableRowSorter;
 import java.util.Comparator;
 
 public class PharmacyUI extends JFrame {
 
-    // Main data lists
+    // A single reference to the controller that holds all business logic
+    private PharmacyManagementSystem pharmacyController;
+
+    // UI Components
+    private JTable recordTable, medicineTable, treatmentTable;
+    private DefaultTableModel recordTableModel, medicineTableModel, treatmentTableModel;
+
+    // References to the central data lists
     private ListInterface<DispensingRecord> dispensingRecords;
     private ListInterface<Medicine> medicineList;
-    private ListInterface<Patient> patientList;
+    private ListInterface<Treatment> treatmentList;
     private ListInterface<Doctor> doctorList;
-
-    // Components for Dispensing Records
-    private JTable recordTable;
-    private DefaultTableModel recordTableModel;
-
-    // Components for Medicine Inventory
-    private JTable medicineTable;
-    private DefaultTableModel medicineTableModel;
+    private ListInterface<Patient> patientList;
 
     private JFrame parentFrame;
 
-    public PharmacyUI(JFrame parent, ListInterface<DispensingRecord> dispensingRecords, ListInterface<Medicine> medicineList, ListInterface<Patient> patientList, ListInterface<Doctor> doctorList) {
+    public PharmacyUI(JFrame parent, ListInterface<DispensingRecord> dispensingRecords, ListInterface<Medicine> medicineList, ListInterface<Patient> patientList,
+            ListInterface<Doctor> doctorList, ListInterface<Treatment> treatmentList, ListInterface<Consultation> consultationList) {
         this.parentFrame = parent;
-        this.dispensingRecords = dispensingRecords;
-        this.medicineList = medicineList;
-        this.patientList = patientList;
-        this.doctorList = doctorList;
+        this.pharmacyController = new PharmacyManagementSystem();
+
+        // Get references to the central data lists
+        this.dispensingRecords = ClinicManagementSystem.getDispensingRecordList();
+        this.medicineList = ClinicManagementSystem.getMedicineList();
+        this.treatmentList = ClinicManagementSystem.getTreatmentList();
 
         // --- Frame Setup ---
         setTitle("Pharmacy Management");
@@ -67,6 +67,7 @@ public class PharmacyUI extends JFrame {
         // --- Tabbed Pane (CENTER) ---
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("Arial", Font.BOLD, 14));
+        tabbedPane.addTab("Treatment Records", createTreatmentPanel());
         tabbedPane.addTab("Dispensing Records", createDispensingPanel());
         tabbedPane.addTab("Medicine Inventory", createMedicinePanel());
         add(tabbedPane, BorderLayout.CENTER);
@@ -88,14 +89,12 @@ public class PharmacyUI extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // --- NEW: Search Panel ---
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Search Records:"));
         JTextField searchField = new JTextField(25);
         searchPanel.add(searchField);
-        panel.add(searchPanel, BorderLayout.NORTH); // Add search bar to the top
+        panel.add(searchPanel, BorderLayout.NORTH);
 
-        // --- Table Setup ---
         String[] recordColumnNames = {"Record ID", "Patient Name", "Doctor Name", "Date/Time", "Total Amount"};
         recordTableModel = new DefaultTableModel(recordColumnNames, 0) {
             @Override
@@ -105,9 +104,16 @@ public class PharmacyUI extends JFrame {
         };
         recordTable = new JTable(recordTableModel);
         loadRecordData();
+
+        javax.swing.table.TableColumnModel dispensingColumnModel = recordTable.getColumnModel();
+        dispensingColumnModel.getColumn(0).setPreferredWidth(120);
+        dispensingColumnModel.getColumn(1).setPreferredWidth(200);
+        dispensingColumnModel.getColumn(2).setPreferredWidth(200);
+        dispensingColumnModel.getColumn(3).setPreferredWidth(150);
+        dispensingColumnModel.getColumn(4).setPreferredWidth(100);
+
         panel.add(new JScrollPane(recordTable), BorderLayout.CENTER);
 
-        // --- NEW: Add Table Sorter for Real-Time Filtering ---
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(recordTableModel);
         recordTable.setRowSorter(sorter);
 
@@ -145,30 +151,21 @@ public class PharmacyUI extends JFrame {
             }
         });
 
-        panel.add(new JScrollPane(recordTable), BorderLayout.CENTER);
-
-        // CRUD Actions Panel
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        JButton btnAdd = new JButton("Add New Record");
         JButton btnUpdate = new JButton("Update Record");
-        JButton btnDelete = new JButton("Delete Record");
+        JButton btnDelete = new JButton("Revert to Treatment");
         JButton btnSalesReport = new JButton("Generate Sales Report");
-        actionsPanel.add(btnAdd);
         actionsPanel.add(btnUpdate);
         actionsPanel.add(btnDelete);
         actionsPanel.add(btnSalesReport);
         panel.add(actionsPanel, BorderLayout.SOUTH);
 
-        // CREATE Action Listener
-        btnAdd.addActionListener(e -> showAddRecordDialog());
-
-        // UPDATE Action Listener
         btnUpdate.addActionListener(e -> {
             int selectedViewRow = recordTable.getSelectedRow();
             if (selectedViewRow >= 0) {
                 int modelRow = recordTable.convertRowIndexToModel(selectedViewRow);
                 String recordId = (String) recordTableModel.getValueAt(modelRow, 0);
-                DispensingRecord record = findRecordById(recordId);
+                DispensingRecord record = pharmacyController.findRecordById(recordId);
                 if (record != null) {
                     showUpdateRecordDialog(record);
                 }
@@ -177,39 +174,93 @@ public class PharmacyUI extends JFrame {
             }
         });
 
-        // DELETE Action Listener
         btnDelete.addActionListener(e -> {
             int selectedViewRow = recordTable.getSelectedRow();
             if (selectedViewRow >= 0) {
                 int modelRow = recordTable.convertRowIndexToModel(selectedViewRow);
                 String recordId = (String) recordTableModel.getValueAt(modelRow, 0);
-                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete record " + recordId + "?\nThis will return the items to stock.", "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to revert this record?", "Confirm Revert", JOptionPane.YES_NO_OPTION);
                 if (confirm == JOptionPane.YES_OPTION) {
-                    deleteRecord(recordId);
+                    try {
+                        pharmacyController.revertDispensingRecord(recordId);
+                        loadAllTables();
+                        JOptionPane.showMessageDialog(this, "Record " + recordId + " has been reverted.");
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(this, "Revert Failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             } else {
-                JOptionPane.showMessageDialog(this, "Please select a record to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please select a record to revert.", "No Selection", JOptionPane.WARNING_MESSAGE);
             }
         });
 
+        btnSalesReport.addActionListener(e -> {
+            String report = pharmacyController.generateSalesReport();
+            displayReport("Sales Report", report);
+        });
+
+        // --- NEW: Add Mouse Listener for double-click functionality ---
         recordTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                if (evt.getClickCount() == 2) {
+                if (evt.getClickCount() == 2) { // Check for a double-click
                     int viewRow = recordTable.rowAtPoint(evt.getPoint());
                     if (viewRow >= 0) {
                         int modelRow = recordTable.convertRowIndexToModel(viewRow);
                         String recordId = (String) recordTableModel.getValueAt(modelRow, 0);
-                        DispensingRecord record = findRecordById(recordId);
+                        DispensingRecord record = pharmacyController.findRecordById(recordId);
                         if (record != null) {
-                            showRecordDetails(record);
+                            showRecordDetails(record); // Call the existing details method
                         }
                     }
                 }
             }
         });
 
-        btnSalesReport.addActionListener(e -> showSalesReport());
+        return panel;
+    }
+
+    //Add the new method to create the Treatment Panel
+    private JPanel createTreatmentPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        String[] columnNames = {"Treatment ID", "Consultation ID", "Details", "Prescribed Medicines"};
+        treatmentTableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        treatmentTable = new JTable(treatmentTableModel);
+        loadTreatmentData();
+
+        javax.swing.table.TableColumnModel columnModel = treatmentTable.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(100);
+        columnModel.getColumn(1).setPreferredWidth(120);
+        columnModel.getColumn(2).setPreferredWidth(400);
+        columnModel.getColumn(3).setPreferredWidth(150);
+
+        panel.add(new JScrollPane(treatmentTable), BorderLayout.CENTER);
+
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btnDispense = new JButton("Create Dispensing Record from Treatment");
+        actionsPanel.add(btnDispense);
+        panel.add(actionsPanel, BorderLayout.SOUTH);
+
+        btnDispense.addActionListener(e -> {
+            int selectedViewRow = treatmentTable.getSelectedRow();
+            if (selectedViewRow >= 0) {
+                int modelRow = treatmentTable.convertRowIndexToModel(selectedViewRow);
+                String treatmentId = (String) treatmentTableModel.getValueAt(modelRow, 0);
+                Treatment treatmentToDispense = pharmacyController.findTreatmentById(treatmentId);
+                if (treatmentToDispense != null) {
+                    showDispenseDialog(treatmentToDispense);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a treatment record to dispense.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            }
+        });
 
         return panel;
     }
@@ -236,6 +287,15 @@ public class PharmacyUI extends JFrame {
         };
         medicineTable = new JTable(medicineTableModel);
         loadMedicineData();
+
+        javax.swing.table.TableColumnModel medicineColumnModel = medicineTable.getColumnModel();
+        medicineColumnModel.getColumn(0).setPreferredWidth(80);   // ID
+        medicineColumnModel.getColumn(1).setPreferredWidth(190);  // Name
+        medicineColumnModel.getColumn(2).setPreferredWidth(310);  // Description
+        medicineColumnModel.getColumn(3).setPreferredWidth(80);   // Stock
+        medicineColumnModel.getColumn(4).setPreferredWidth(80);   // Price
+        medicineColumnModel.getColumn(3).setPreferredWidth(80);   // Reorder Lvl
+
         panel.add(new JScrollPane(medicineTable), BorderLayout.CENTER);
 
         // --- Add Table Sorter for Real-Time Filtering ---
@@ -327,20 +387,25 @@ public class PharmacyUI extends JFrame {
             if (selectedViewRow >= 0) {
                 int modelRow = medicineTable.convertRowIndexToModel(selectedViewRow);
                 String medicineId = (String) medicineTableModel.getValueAt(modelRow, 0);
-
-                int confirm = JOptionPane.showConfirmDialog(this,
-                        "Are you sure you want to delete medicine " + medicineId + "?",
-                        "Confirm Deletion", JOptionPane.YES_NO_OPTION);
-
+                int confirm = JOptionPane.showConfirmDialog(this, "Delete " + medicineId + "?", "Confirm", JOptionPane.YES_NO_OPTION);
                 if (confirm == JOptionPane.YES_OPTION) {
-                    deleteMedicine(medicineId);
+                    try {
+                        pharmacyController.deleteMedicine(medicineId);
+                        loadMedicineData();
+                        JOptionPane.showMessageDialog(this, "Medicine deleted successfully.");
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(this, "Deletion Failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Please select a medicine to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
             }
         });
 
-        btnLowStockReport.addActionListener(e -> showLowStockReport());
+        btnLowStockReport.addActionListener(e -> {
+            String report = pharmacyController.generateLowStockReport();
+            displayReport("Low Stock Report", report);
+        });
 
         return panel;
     }
@@ -420,22 +485,24 @@ public class PharmacyUI extends JFrame {
                 return;
             }
 
-            String newRecordId = generateNewRecordId(); // This is the new, standardized ID
+            String newRecordId = generateNewRecordId();
             DispensingRecord newRecord = new DispensingRecord(newRecordId, patientName, doctorName);
 
             Iterator<DispensedItem> iterator = tempItemList.getIterator();
             while (iterator.hasNext()) {
                 DispensedItem item = iterator.next();
-                newRecord.addItem(item); // Adds item and calculates total
+                newRecord.addItem(item);
 
-                // Deduct stock
+                // --- THIS IS THE CRITICAL LINE THAT MUST BE PRESENT ---
+                // It finds the medicine from the item and reduces its stock.
                 Medicine dispensedMedicine = item.getMedicine();
                 dispensedMedicine.setStockQuantity(dispensedMedicine.getStockQuantity() - item.getQuantityDispensed());
+                // ---------------------------------------------------------
             }
 
             dispensingRecords.add(newRecord);
             loadRecordData();
-            loadMedicineData(); // Refresh medicine table to show new stock levels
+            loadMedicineData(); // This refreshes the medicine table to show the new stock
             dialog.dispose();
             JOptionPane.showMessageDialog(this, "New dispensing record created successfully!");
         });
@@ -446,59 +513,159 @@ public class PharmacyUI extends JFrame {
     }
 
     private void showUpdateRecordDialog(DispensingRecord record) {
-        // NOTE: Updating dispensed items in a historical record is complex and often discouraged.
-        // This implementation allows updating only the Patient and Doctor.
-        JComboBox<String> patientCombo = new JComboBox<>(getPatientNames());
-        patientCombo.setSelectedItem(record.getPatientName());
+        JDialog dialog = new JDialog(this, "Update Record: " + record.getRecordId(), true);
+        dialog.setSize(600, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
 
-        JComboBox<String> doctorCombo = new JComboBox<>(getDoctorNames());
-        doctorCombo.setSelectedItem(record.getDoctorName());
+        // --- Create a table model that is editable only in the "New Qty" column ---
+        String[] columnNames = {"Medicine", "Current Qty", "New Qty"};
+        DefaultTableModel itemsTableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 2; // Only the "New Qty" column is editable
+            }
+        };
 
-        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
-        panel.add(new JLabel("Patient:"));
-        panel.add(patientCombo);
-        panel.add(new JLabel("Doctor:"));
-        panel.add(doctorCombo);
-
-        int result = JOptionPane.showConfirmDialog(this, panel, "Update Record " + record.getRecordId(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-        if (result == JOptionPane.OK_OPTION) {
-            record.setPatientName((String) patientCombo.getSelectedItem());
-            record.setDoctorName((String) doctorCombo.getSelectedItem());
-            loadRecordData();
-            JOptionPane.showMessageDialog(this, "Record updated successfully!");
+        // Populate the table with the record's current items
+        Iterator<DispensedItem> iterator = record.getDispensedItems().getIterator();
+        while (iterator.hasNext()) {
+            DispensedItem item = iterator.next();
+            itemsTableModel.addRow(new Object[]{
+                item.getMedicine().getName(),
+                item.getQuantityDispensed(),
+                item.getQuantityDispensed() // New Qty starts same as current
+            });
         }
+
+        JTable itemsTable = new JTable(itemsTableModel);
+        itemsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        dialog.add(new JScrollPane(itemsTable), BorderLayout.CENTER);
+
+        // --- Dialog Buttons ---
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnSaveChanges = new JButton("Save Changes");
+        JButton btnCancel = new JButton("Cancel");
+        buttonPanel.add(btnSaveChanges);
+        buttonPanel.add(btnCancel);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // --- "Save Changes" Action Listener ---
+        btnSaveChanges.addActionListener(e -> {
+            // Stop cell editing to make sure the last typed value is saved
+            if (itemsTable.isEditing()) {
+                itemsTable.getCellEditor().stopCellEditing();
+            }
+
+            // --- Step 1: Validate all changes before applying any ---
+            for (int i = 0; i < itemsTableModel.getRowCount(); i++) {
+                DispensedItem currentItem = record.getDispensedItems().getEntry(i + 1);
+                int originalQty = currentItem.getQuantityDispensed();
+                int newQty;
+                try {
+                    newQty = Integer.parseInt(itemsTableModel.getValueAt(i, 2).toString());
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(dialog, "Invalid quantity for " + currentItem.getMedicine().getName(), "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                int quantityChange = newQty - originalQty;
+                if (quantityChange > 0 && currentItem.getMedicine().getStockQuantity() < quantityChange) {
+                    JOptionPane.showMessageDialog(dialog, "Not enough stock to increase quantity for " + currentItem.getMedicine().getName() + ".\nAvailable stock: " + currentItem.getMedicine().getStockQuantity(), "Stock Error", JOptionPane.ERROR_MESSAGE);
+                    return; // Abort the save
+                }
+            }
+
+            // --- Step 2: Apply all changes since validation passed ---
+            for (int i = 0; i < itemsTableModel.getRowCount(); i++) {
+                DispensedItem currentItem = record.getDispensedItems().getEntry(i + 1);
+                int originalQty = currentItem.getQuantityDispensed();
+                int newQty = Integer.parseInt(itemsTableModel.getValueAt(i, 2).toString());
+
+                // This calculates the difference (e.g., 50 - 2 = 48)
+                int quantityChange = newQty - originalQty;
+
+                if (quantityChange != 0) {
+                    // This adjusts the stock by that difference (e.g., currentStock - 48)
+                    Medicine medicine = currentItem.getMedicine();
+                    medicine.setStockQuantity(medicine.getStockQuantity() - quantityChange);
+
+                    // This updates the item's quantity for future reference
+                    currentItem.setQuantityDispensed(newQty);
+                }
+            }
+
+            // Recalculate the record's total and refresh UI
+            record.recalculateTotal();
+            loadRecordData();
+            loadMedicineData();
+
+            dialog.dispose();
+            JOptionPane.showMessageDialog(this, "Record updated successfully!");
+        });
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+        dialog.setVisible(true);
     }
 
-    private void deleteRecord(String recordId) {
+    private void revertDispensingRecord(String recordId) {
+        // 1. Find the Dispensing Record to revert
         int position = -1;
-        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
         int counter = 1;
-        DispensingRecord recordToDelete = null;
+        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
+        DispensingRecord recordToRevert = null;
 
         while (iterator.hasNext()) {
             DispensingRecord record = iterator.next();
             if (record.getRecordId().equals(recordId)) {
                 position = counter;
-                recordToDelete = record;
+                recordToRevert = record;
                 break;
             }
             counter++;
         }
 
-        if (position != -1 && recordToDelete != null) {
-            // Return items to stock
-            Iterator<DispensedItem> itemIterator = recordToDelete.getDispensedItems().getIterator();
+        if (position != -1 && recordToRevert != null) {
+            // --- THIS IS THE CORRECTED LOGIC ---
+
+            // 2. Create a NEW list and populate it by iterating through ALL items
+            ListInterface<Medicine> prescribedMedicines = new adt.DoublyLinkedList<>();
+            Iterator<DispensedItem> itemIterator = recordToRevert.getDispensedItems().getIterator();
+
             while (itemIterator.hasNext()) {
                 DispensedItem item = itemIterator.next();
                 Medicine medicine = item.getMedicine();
+
+                // Action A: Return the item's quantity back to the main stock
                 medicine.setStockQuantity(medicine.getStockQuantity() + item.getQuantityDispensed());
+
+                // Action B: Add the medicine to our list for the new treatment
+                prescribedMedicines.add(medicine);
             }
 
+            // 3. Create the new Treatment Record with the complete list of medicines
+            String newTreatmentId = "T" + recordToRevert.getRecordId().substring(3);
+            String details = recordToRevert.getOriginalTreatmentDetails();
+            Consultation originalConsultation = recordToRevert.getOriginalConsultation();
+
+            if (originalConsultation == null) {
+                JOptionPane.showMessageDialog(this, "Cannot revert: Original consultation data is missing.", "Revert Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Pass the fully populated 'prescribedMedicines' list here
+            Treatment newTreatment = new Treatment(newTreatmentId, originalConsultation, details, prescribedMedicines);
+            control.ClinicManagementSystem.getTreatmentList().add(newTreatment);
+
+            // 4. Remove the old Dispensing Record
             dispensingRecords.remove(position);
+
+            // 5. Refresh all tables to show the changes
             loadRecordData();
-            loadMedicineData(); // Refresh medicine table to show restored stock
-            JOptionPane.showMessageDialog(this, "Record " + recordId + " deleted successfully.");
+            loadMedicineData();
+            loadTreatmentData();
+
+            JOptionPane.showMessageDialog(this, "Record " + recordId + " has been reverted to Treatment Record " + newTreatmentId + ".");
         }
     }
 
@@ -580,6 +747,65 @@ public class PharmacyUI extends JFrame {
         }
     }
 
+    private void showDispenseDialog(Treatment treatment) {
+        if (treatment.getPrescribedMedicine().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "This treatment has no medication prescribed.", "Cannot Dispense", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        JDialog dialog = new JDialog(this, "Dispense Medication for Treatment: " + treatment.getTreatmentID(), true);
+        dialog.setLayout(new BorderLayout(10, 10));
+
+        JPanel fieldsPanel = new JPanel();
+        fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));
+        fieldsPanel.setBorder(BorderFactory.createTitledBorder("Confirm Quantities"));
+
+        java.util.List<JSpinner> quantitySpinners = new java.util.ArrayList<>();
+        Iterator<Medicine> medIterator = treatment.getPrescribedMedicine().getIterator();
+
+        while (medIterator.hasNext()) {
+            Medicine med = medIterator.next();
+            JPanel medPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            medPanel.add(new JLabel(String.format("%s (Available: %d):", med.getName(), med.getStockQuantity())));
+            JSpinner quantitySpinner = new JSpinner(new SpinnerNumberModel(1, 1, med.getStockQuantity(), 1));
+            quantitySpinners.add(quantitySpinner);
+            medPanel.add(quantitySpinner);
+            fieldsPanel.add(medPanel);
+        }
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnConfirmDispense = new JButton("Confirm and Dispense");
+        JButton btnCancel = new JButton("Cancel");
+        buttonPanel.add(btnConfirmDispense);
+        buttonPanel.add(btnCancel);
+
+        dialog.add(new JScrollPane(fieldsPanel), BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+
+        // --- REFACTORED AND CORRECTED Action Listener ---
+        btnConfirmDispense.addActionListener(e -> {
+            try {
+                // Collect quantities from spinners
+                List<Integer> quantities = new ArrayList<>();
+                for (JSpinner spinner : quantitySpinners) {
+                    quantities.add((Integer) spinner.getValue());
+                }
+                // Call controller to perform the action
+                pharmacyController.dispenseFromTreatment(treatment, quantities);
+                loadAllTables();
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Dispensing successful.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Dispense Failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+        dialog.setVisible(true);
+    }
+
     // --- Helper methods to populate JComboBoxes ---
     private String[] getPatientNames() {
         String[] names = new String[patientList.getLength()];
@@ -629,17 +855,6 @@ public class PharmacyUI extends JFrame {
             Medicine med = iterator.next();
             if (med.getName().equals(name)) {
                 return med;
-            }
-        }
-        return null;
-    }
-
-    private DispensingRecord findRecordById(String id) {
-        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
-        while (iterator.hasNext()) {
-            DispensingRecord rec = iterator.next();
-            if (rec.getRecordId().equals(id)) {
-                return rec;
             }
         }
         return null;
@@ -698,97 +913,6 @@ public class PharmacyUI extends JFrame {
         JOptionPane.showMessageDialog(this, scrollPane, "Record Details - " + record.getRecordId(), JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /**
-     * Generates a report of all dispensing records, sorted by total amount in
-     * descending order.
-     */
-    private void showSalesReport() {
-        if (dispensingRecords.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No dispensing records available to generate a report.", "Report Empty", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        // 1. Create a temporary copy of the list to avoid changing the original order.
-        ListInterface<DispensingRecord> sortedRecords = new adt.DoublyLinkedList<>();
-        Iterator<DispensingRecord> copyIterator = dispensingRecords.getIterator();
-        while (copyIterator.hasNext()) {
-            sortedRecords.add(copyIterator.next());
-        }
-
-        // 2. Define a Comparator to sort records by their total amount.
-        Comparator<DispensingRecord> byAmount = Comparator.comparingDouble(DispensingRecord::getTotalAmount);
-
-        // 3. Sort the copied list using the ADT's built-in sort method.
-        sortedRecords.sortDescending(byAmount);
-
-        // 4. Build the formatted report string from the sorted list.
-        StringBuilder reportContent = new StringBuilder();
-        reportContent.append("===== Sales Report (Descending Order) =====\n");
-        reportContent.append("Generated on: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))).append("\n");
-        reportContent.append("----------------------------------------------------------\n");
-        reportContent.append(String.format("%-15s | %-20s | %s\n", "Record ID", "Patient Name", "Total Amount"));
-        reportContent.append("----------------------------------------------------------\n");
-
-        Iterator<DispensingRecord> reportIterator = sortedRecords.getIterator();
-        while (reportIterator.hasNext()) {
-            DispensingRecord record = reportIterator.next();
-            reportContent.append(String.format("%-15s | %-20s | $%-12.2f\n",
-                    record.getRecordId(),
-                    record.getPatientName(),
-                    record.getTotalAmount()));
-        }
-        reportContent.append("----------------------------------------------------------\n");
-
-        // 5. Display the report.
-        JTextArea textArea = new JTextArea(reportContent.toString());
-        textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        textArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new Dimension(550, 400));
-        JOptionPane.showMessageDialog(this, scrollPane, "Sales Report", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    /**
-     * Generates a report of all medicines with stock at or below their reorder
-     * level.
-     */
-    private void showLowStockReport() {
-        StringBuilder reportContent = new StringBuilder();
-        reportContent.append("===== Low Stock Report =====\n");
-        reportContent.append("Generated on: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
-        reportContent.append("--------------------------------------------------\n");
-        reportContent.append(String.format("%-10s | %-25s | %-10s | %-10s\n", "ID", "Name", "Current", "Reorder Lvl"));
-        reportContent.append("--------------------------------------------------\n");
-
-        boolean foundLowStock = false;
-        Iterator<Medicine> iterator = medicineList.getIterator();
-        while (iterator.hasNext()) {
-            Medicine medicine = iterator.next();
-            if (medicine.getStockQuantity() <= medicine.getReorderLvl()) {
-                reportContent.append(String.format("%-10s | %-25s | %-10d | %-10d\n",
-                        medicine.getMedicineID(),
-                        medicine.getName(),
-                        medicine.getStockQuantity(),
-                        medicine.getReorderLvl()));
-                foundLowStock = true;
-            }
-        }
-
-        if (!foundLowStock) {
-            reportContent.append("\nAll medicines are sufficiently stocked.\n");
-        }
-
-        reportContent.append("--------------------------------------------------\n");
-
-        // Display the report
-        JTextArea textArea = new JTextArea(reportContent.toString());
-        textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        textArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new Dimension(550, 400));
-        JOptionPane.showMessageDialog(this, scrollPane, "Low Stock Report", JOptionPane.INFORMATION_MESSAGE);
-    }
-
     private void showAddMedicineDialog() {
         // Create input fields for the dialog
         JTextField idField = new JTextField();
@@ -825,65 +949,59 @@ public class PharmacyUI extends JFrame {
                 double price = Double.parseDouble(priceField.getText());
                 int reorderLvl = Integer.parseInt(reorderLvlField.getText());
 
-                // Validation checks
-                if (id.isEmpty() || name.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "ID and Name cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                if (findMedicineById(id) != null) {
-                    JOptionPane.showMessageDialog(this, "A medicine with ID '" + id + "' already exists.", "Duplicate ID Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                // Create new medicine and add it using the ADT's add method
-                Medicine newMedicine = new Medicine(id, name, description, stock, price, reorderLvl);
-                medicineList.add(newMedicine);
-
-                loadMedicineData(); // Refresh the table
+                pharmacyController.addMedicine(id, name, description, stock, price, reorderLvl);
+                loadMedicineData();
                 JOptionPane.showMessageDialog(this, "New medicine added successfully!");
-
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid number format for stock, price, or reorder level.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid number format.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Add Failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    private void deleteMedicine(String medicineIdToDelete) {
-        // Important: Check if the medicine is used in any dispensing records
-        Iterator<DispensingRecord> recordIterator = dispensingRecords.getIterator();
-        while (recordIterator.hasNext()) {
-            DispensingRecord record = recordIterator.next();
-            Iterator<DispensedItem> itemIterator = record.getDispensedItems().getIterator();
-            while (itemIterator.hasNext()) {
-                if (itemIterator.next().getMedicine().getMedicineID().equals(medicineIdToDelete)) {
-                    JOptionPane.showMessageDialog(this,
-                            "Cannot delete this medicine because it is part of a historical dispensing record (" + record.getRecordId() + ").",
-                            "Deletion Blocked",
-                            JOptionPane.ERROR_MESSAGE);
-                    return; // Stop the deletion process
+    //Add the new method to load treatment data into the table
+    private void loadTreatmentData() {
+        if (treatmentTableModel == null) {
+            return; // Defensive check
+        }
+        treatmentTableModel.setRowCount(0);
+        Iterator<Treatment> iterator = treatmentList.getIterator();
+
+        while (iterator.hasNext()) {
+            Treatment treatment = iterator.next();
+
+            // Format the list of prescribed medicines into a single string
+            StringBuilder medIDs = new StringBuilder();
+            Iterator<Medicine> medIterator = treatment.getPrescribedMedicine().getIterator();
+            while (medIterator.hasNext()) {
+                medIDs.append(medIterator.next().getMedicineID());
+                if (medIterator.hasNext()) {
+                    medIDs.append(", ");
                 }
             }
-        }
 
-        // Find the position of the medicine to remove it from the ADT
-        int position = -1;
-        int counter = 1;
-        Iterator<Medicine> medicineIterator = medicineList.getIterator();
-        while (medicineIterator.hasNext()) {
-            if (medicineIterator.next().getMedicineID().equals(medicineIdToDelete)) {
-                position = counter;
-                break;
-            }
-            counter++;
+            treatmentTableModel.addRow(new Object[]{
+                treatment.getTreatmentID(),
+                treatment.getConsultation() != null ? treatment.getConsultation().getConsultationID() : "N/A",
+                treatment.getTreatmentDetails(),
+                medIDs.toString()
+            });
         }
+    }
 
-        // Use the ADT's remove method if found
-        if (position != -1) {
-            medicineList.remove(position);
-            loadMedicineData(); // Refresh table
-            JOptionPane.showMessageDialog(this, "Medicine " + medicineIdToDelete + " deleted successfully.");
-        } else {
-            JOptionPane.showMessageDialog(this, "Could not find medicine to delete.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+    private void loadAllTables() {
+        loadRecordData();
+        loadMedicineData();
+        loadTreatmentData();
+    }
+
+    private void displayReport(String title, String content) {
+        JTextArea textArea = new JTextArea(content);
+        textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        textArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(550, 400));
+        JOptionPane.showMessageDialog(this, scrollPane, title, JOptionPane.INFORMATION_MESSAGE);
     }
 }

@@ -124,7 +124,7 @@ public class MainUI extends JFrame {
         });
 
         btnConsultation.addActionListener(e -> {
-            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList, scheduleList).setVisible(true);
+            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList, scheduleList, treatmentList).setVisible(true);
             this.setVisible(false);
         });
 
@@ -133,7 +133,7 @@ public class MainUI extends JFrame {
         });
 
         btnPharmacy.addActionListener(e -> {
-            new PharmacyUI(this, dispensingRecordList, medicineList, patientList, doctorList).setVisible(true);
+            new PharmacyUI(this, dispensingRecordList, medicineList, patientList, doctorList, treatmentList, consultationList).setVisible(true);
             this.setVisible(false);
         });
 

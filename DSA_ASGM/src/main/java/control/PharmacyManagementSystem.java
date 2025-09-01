@@ -8,174 +8,256 @@ package control;
  *
  * @author Melvin
  */
-import adt.DoublyLinkedList;
 import adt.ListInterface;
 import entity.DispensedItem;
 import entity.DispensingRecord;
 import entity.Medicine;
-import java.util.Iterator;
-import java.util.Scanner;
-import java.io.FileWriter;
-import utility.ReadWriteFile;
-import java.io.IOException;
-import java.io.PrintWriter;
+import entity.Treatment;
+import entity.Consultation;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
 
 public class PharmacyManagementSystem {
 
-    private ListInterface<Medicine> medicineStock;
-    private ListInterface<DispensingRecord> dispensingHistory;
-    private int nextRecordId = 1; // Simple ID generator for dispensing records
+    // Access the central data lists from the main application class
+    private ListInterface<DispensingRecord> dispensingRecords = ClinicManagementSystem.getDispensingRecordList();
+    private ListInterface<Medicine> medicineList = ClinicManagementSystem.getMedicineList();
+    private ListInterface<Treatment> treatmentList = ClinicManagementSystem.getTreatmentList();
 
     public PharmacyManagementSystem() {
-        // Initialize the core ADTs
-        medicineStock = new DoublyLinkedList<>();
-        dispensingHistory = new DoublyLinkedList<>();
-
-        // Add some dummy data to start with
-        initializeData();
+        // Constructor is empty as data is loaded centrally.
     }
 
-    private void initializeData() {
-        medicineStock.add(new Medicine("PAN100", "Paracetamol 500mg", "Fever/Pain", 100, 4.8, 25));
-        medicineStock.add(new Medicine("IBU200", "Ibuprofen 200mg", "Anti-inflammatory", 100, 38.87, 25));
-        medicineStock.add(new Medicine("AMO500", "Amoxicillin 500mg", "Penicillin antibiotic", 100, 28, 25));
-        medicineStock.add(new Medicine("LOR010", "Loratadine 10mg", "Treat allergies", 100, 11, 25));
-    }
-
-    // ========== 1. Medicine Stock Control ==========
-    public void addOrUpdateMedicine() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter Medicine ID (e.g., PAN100): ");
-        String id = scanner.nextLine().toUpperCase();
-        String description = null;
-
-        Medicine existingMedicine = findMedicineById(id);
-
-        if (existingMedicine != null) {
-            System.out.printf("Medicine '%s' found. Current stock: %d\n", existingMedicine.getName(), existingMedicine.getStockQuantity());
-            System.out.print("Enter quantity to add (positive number) or remove (negative number): ");
-            int qtyChange = scanner.nextInt();
-            int newQty = existingMedicine.getStockQuantity() + qtyChange;
-            existingMedicine.setStockQuantity(newQty);
-            System.out.println("Stock updated successfully. New quantity: " + newQty);
-        } else {
-            System.out.println("Medicine ID not found. Creating new medicine entry.");
-            System.out.print("Enter Medicine Name: ");
-            String name = scanner.nextLine();
-            System.out.print("Enter Initial Quantity: ");
-            int qty = scanner.nextInt();
-            System.out.print("Enter Unit Price: ");
-            double price = scanner.nextDouble();
-            System.out.print("Enter Reorder Level: ");
-            int reorderLvl = scanner.nextInt();
-
-            Medicine newMedicine = new Medicine(id, name, description, qty, price, reorderLvl);
-            medicineStock.add(newMedicine);
-            System.out.println("New medicine added successfully!");
+    // ========== Report Generation Logic ==========
+    public String generateSalesReport() {
+        if (dispensingRecords.isEmpty()) {
+            return "No dispensing records available to generate a report.";
         }
+        ListInterface<DispensingRecord> sortedRecords = new adt.DoublyLinkedList<>();
+        Iterator<DispensingRecord> copyIterator = dispensingRecords.getIterator();
+        while (copyIterator.hasNext()) {
+            sortedRecords.add(copyIterator.next());
+        }
+        Comparator<DispensingRecord> byAmount = Comparator.comparingDouble(DispensingRecord::getTotalAmount);
+        sortedRecords.sortDescending(byAmount);
+
+        StringBuilder reportContent = new StringBuilder();
+        reportContent.append("===== Sales Report (Descending Order) =====\n");
+        reportContent.append("Generated on: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))).append("\n");
+        reportContent.append("----------------------------------------------------------\n");
+        reportContent.append(String.format("%-15s | %-20s | %s\n", "Record ID", "Patient Name", "Total Amount"));
+        reportContent.append("----------------------------------------------------------\n");
+
+        Iterator<DispensingRecord> reportIterator = sortedRecords.getIterator();
+        while (reportIterator.hasNext()) {
+            DispensingRecord record = reportIterator.next();
+            reportContent.append(String.format("%-15s | %-20s | $%-12.2f\n",
+                    record.getRecordId(),
+                    record.getPatientName(),
+                    record.getTotalAmount()));
+        }
+        reportContent.append("----------------------------------------------------------\n");
+        return reportContent.toString();
     }
 
-    public Medicine findMedicineById(String medicineId) {
-        Iterator<Medicine> iterator = medicineStock.getIterator();
+    public String generateLowStockReport() {
+        StringBuilder reportContent = new StringBuilder();
+        reportContent.append("===== Low Stock Report =====\n");
+        reportContent.append("Generated on: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
+        reportContent.append("--------------------------------------------------\n");
+        reportContent.append(String.format("%-10s | %-25s | %-10s | %-10s\n", "ID", "Name", "Current", "Reorder Lvl"));
+        reportContent.append("--------------------------------------------------\n");
+
+        boolean foundLowStock = false;
+        Iterator<Medicine> iterator = medicineList.getIterator();
         while (iterator.hasNext()) {
-            Medicine currentMedicine = iterator.next();
-            if (currentMedicine.getMedicineID().equals(medicineId)) {
-                return currentMedicine;
+            Medicine medicine = iterator.next();
+            if (medicine.getStockQuantity() <= medicine.getReorderLvl()) {
+                reportContent.append(String.format("%-10s | %-25s | %-10d | %-10d\n",
+                        medicine.getMedicineID(),
+                        medicine.getName(),
+                        medicine.getStockQuantity(),
+                        medicine.getReorderLvl()));
+                foundLowStock = true;
             }
         }
-        return null; // Not found
-    }
-
-    /**
-     * Generates a full inventory report and saves it to a text file. This
-     * method replaces the old viewAllMedicines() for file output.
-     */
-    public void generateInventoryReport(String filename) {
-        System.out.println("\nGenerating inventory report...");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
-
-            writer.println("===== Full Medicine Inventory Report =====");
-            writer.println("Generated on: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            writer.println("==========================================");
-
-            if (medicineStock.isEmpty()) {
-                writer.println("Inventory is empty.");
-            } else {
-                Iterator<Medicine> iterator = medicineStock.getIterator();
-                while (iterator.hasNext()) {
-                    writer.println(iterator.next().toString());
-                }
-            }
-
-            System.out.println("Success! Inventory report saved to " + filename);
-
-        } catch (IOException e) {
-            System.out.println("Error: An error occurred while writing to the file: " + e.getMessage());
+        if (!foundLowStock) {
+            reportContent.append("\nAll medicines are sufficiently stocked.\n");
         }
+        reportContent.append("--------------------------------------------------\n");
+        return reportContent.toString();
     }
 
-    /**
-     * Generates a report of all medicines with stock at or below their reorder
-     * level and saves it to a text file.
-     */
-    public void generateLowStockReport(String filename) {
-        System.out.println("\nGenerating low stock report...");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+    // ========== Medicine CRUD Logic ==========
+    public void addMedicine(String id, String name, String description, int stock, double price, int reorderLvl) throws Exception {
+        if (id.isEmpty() || name.isEmpty()) {
+            throw new Exception("ID and Name cannot be empty.");
+        }
+        if (findMedicineById(id) != null) {
+            throw new Exception("A medicine with ID '" + id + "' already exists.");
+        }
+        Medicine newMedicine = new Medicine(id, name, description, stock, price, reorderLvl);
+        medicineList.add(newMedicine);
+    }
 
-            writer.println("===== Low Stock Report =====");
-            writer.println("Generated on: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            writer.println("============================");
-
-            boolean foundLowStock = false;
-            Iterator<Medicine> iterator = medicineStock.getIterator();
-            while (iterator.hasNext()) {
-                Medicine medicine = iterator.next();
-                if (medicine.getStockQuantity() <= medicine.getReorderLvl()) {
-                    writer.printf("LOW STOCK: %s (Current Stock: %d, Reorder Level: %d)\n",
-                            medicine.getName(), medicine.getStockQuantity(), medicine.getReorderLvl());
-                    foundLowStock = true;
+    public void deleteMedicine(String medicineIdToDelete) throws Exception {
+        Iterator<DispensingRecord> recordIterator = dispensingRecords.getIterator();
+        while (recordIterator.hasNext()) {
+            DispensingRecord record = recordIterator.next();
+            Iterator<DispensedItem> itemIterator = record.getDispensedItems().getIterator();
+            while (itemIterator.hasNext()) {
+                if (itemIterator.next().getMedicine().getMedicineID().equals(medicineIdToDelete)) {
+                    throw new Exception("Cannot delete medicine: It is part of historical record " + record.getRecordId());
                 }
             }
+        }
 
-            if (!foundLowStock) {
-                writer.println("All medicines are sufficiently stocked.");
+        int position = -1;
+        int counter = 1;
+        Iterator<Medicine> medicineIterator = medicineList.getIterator();
+        while (medicineIterator.hasNext()) {
+            if (medicineIterator.next().getMedicineID().equals(medicineIdToDelete)) {
+                position = counter;
+                break;
             }
+            counter++;
+        }
 
-            System.out.println("Success! Low stock report saved to " + filename);
-
-        } catch (IOException e) {
-            System.out.println("Error: An error occurred while writing to the file: " + e.getMessage());
+        if (position != -1) {
+            medicineList.remove(position);
+        } else {
+            throw new Exception("Could not find medicine to delete.");
         }
     }
 
-    /**
-     * Generates a complete history of all dispensing records and saves it to a
-     * text file.
-     */
-    public void generateDispensingHistoryReport(String filename) {
-        System.out.println("\nGenerating dispensing history report...");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+    // ========== Dispensing & Revert Logic ==========
+    public void dispenseFromTreatment(Treatment treatment, java.util.List<Integer> quantities) throws Exception {
+        String newRecordId = generateNewRecordId();
+        Consultation consultation = treatment.getConsultation();
+        String patientName = consultation.getPatient() != null ? consultation.getPatient().getName() : "N/A";
+        String doctorName = consultation.getDoctor() != null ? consultation.getDoctor().getName() : "N/A";
+        String originalDetails = treatment.getTreatmentDetails();
+        DispensingRecord newRecord = new DispensingRecord(newRecordId, patientName, doctorName, consultation, originalDetails);
 
-            writer.println("===== Full Dispensing History Report =====");
-            writer.println("Generated on: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            writer.println("========================================");
+        Iterator<Medicine> medIterator = treatment.getPrescribedMedicine().getIterator();
+        int i = 0;
+        while (medIterator.hasNext()) {
+            Medicine medicine = medIterator.next();
+            int quantity = quantities.get(i);
+            newRecord.addItem(new DispensedItem(medicine, quantity));
+            medicine.setStockQuantity(medicine.getStockQuantity() - quantity);
+            i++;
+        }
+        dispensingRecords.add(newRecord);
 
-            if (dispensingHistory.isEmpty()) {
-                writer.println("No dispensing records found.");
-            } else {
-                Iterator<DispensingRecord> iterator = dispensingHistory.getIterator();
-                while (iterator.hasNext()) {
-                    writer.println(iterator.next().toString());
-                    writer.println(); // Add a blank line for better separation
+        int position = -1;
+        int counter = 1;
+        Iterator<Treatment> treatmentIterator = treatmentList.getIterator();
+        while (treatmentIterator.hasNext()) {
+            if (treatmentIterator.next().getTreatmentID().equals(treatment.getTreatmentID())) {
+                position = counter;
+                break;
+            }
+            counter++;
+        }
+        if (position != -1) {
+            treatmentList.remove(position);
+        }
+    }
+
+    public void revertDispensingRecord(String recordId) throws Exception {
+        DispensingRecord recordToRevert = findRecordById(recordId);
+        if (recordToRevert == null) {
+            throw new Exception("Record not found.");
+        }
+
+        ListInterface<Medicine> prescribedMedicines = new adt.DoublyLinkedList<>();
+        Iterator<DispensedItem> itemIterator = recordToRevert.getDispensedItems().getIterator();
+        while (itemIterator.hasNext()) {
+            DispensedItem item = itemIterator.next();
+            Medicine medicine = item.getMedicine();
+            medicine.setStockQuantity(medicine.getStockQuantity() + item.getQuantityDispensed());
+            prescribedMedicines.add(medicine);
+        }
+
+        String newTreatmentId = "T" + recordToRevert.getRecordId().substring(3);
+        String details = recordToRevert.getOriginalTreatmentDetails();
+        Consultation originalConsultation = recordToRevert.getOriginalConsultation();
+        if (originalConsultation == null) {
+            throw new Exception("Cannot revert: Original consultation data is missing.");
+        }
+
+        Treatment newTreatment = new Treatment(newTreatmentId, originalConsultation, details, prescribedMedicines);
+        treatmentList.add(newTreatment);
+
+        int position = -1;
+        int counter = 1;
+        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().getRecordId().equals(recordId)) {
+                position = counter;
+                break;
+            }
+            counter++;
+        }
+        if (position != -1) {
+            dispensingRecords.remove(position);
+        }
+    }
+
+    // ========== Helper / Utility Methods ==========
+    private String generateNewRecordId() {
+        int maxIdNum = 1000;
+        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
+        while (iterator.hasNext()) {
+            String currentId = iterator.next().getRecordId();
+            if (currentId != null && currentId.startsWith("MDR")) {
+                try {
+                    int idNum = Integer.parseInt(currentId.substring(3));
+                    if (idNum > maxIdNum) {
+                        maxIdNum = idNum;
+                    }
+                } catch (NumberFormatException e) {
+                    // ignore
                 }
             }
-
-            System.out.println("Success! Dispensing history report saved to " + filename);
-
-        } catch (IOException e) {
-            System.out.println("Error: An error occurred while writing to the file: " + e.getMessage());
         }
+        return "MDR" + (maxIdNum + 1);
+    }
+
+    public Medicine findMedicineById(String id) {
+        Iterator<Medicine> iterator = medicineList.getIterator();
+        while (iterator.hasNext()) {
+            Medicine med = iterator.next();
+            if (med.getMedicineID().equals(id)) {
+                return med;
+            }
+        }
+        return null;
+    }
+
+    public DispensingRecord findRecordById(String id) {
+        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
+        while (iterator.hasNext()) {
+            DispensingRecord rec = iterator.next();
+            if (rec.getRecordId().equals(id)) {
+                return rec;
+            }
+        }
+        return null;
+    }
+
+    public Treatment findTreatmentById(String id) {
+        Iterator<Treatment> iterator = treatmentList.getIterator();
+        while (iterator.hasNext()) {
+            Treatment t = iterator.next();
+            if (t.getTreatmentID().equals(id)) {
+                return t;
+            }
+        }
+        return null;
     }
 }

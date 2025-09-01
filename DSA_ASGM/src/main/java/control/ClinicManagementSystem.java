@@ -81,4 +81,17 @@ public class ClinicManagementSystem {
 //            System.out.println("Data saved successfully.");
 //        }));
     }
+
+    public static ListInterface<Treatment> getTreatmentList() {
+        return treatmentList;
+    }
+
+    public static ListInterface<DispensingRecord> getDispensingRecordList() {
+        return dispensingRecordList;
+    }
+
+    public static ListInterface<Medicine> getMedicineList() {
+        return medicineList;
+    }
+
 }

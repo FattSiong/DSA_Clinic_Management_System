@@ -385,6 +385,17 @@ public class DoublyLinkedList<T extends Comparable<T>> implements ListInterface<
         }
         return currentNode;
     }
+    
+    /**
+     * Compares an object to the current item from the list, handling null values.
+     * * @param a An object to compare.
+     * @param b An object to compare.
+     * @return true if the objects are equal or both are null, false otherwise.
+     */
+    @Override
+    public boolean customEquals(Object a, Object b) {
+        return (a == b) || (a != null && a.equals(b));
+    }
 
     private class DoublyLinkedListIterator implements Iterator<T> {
 
@@ -410,6 +421,8 @@ public class DoublyLinkedList<T extends Comparable<T>> implements ListInterface<
             }
         }
     }
+    
+
 
     private class Node {
 
