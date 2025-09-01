@@ -1,174 +1,166 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package control;
 
-import boundary.DoctorUI;
 import adt.ListInterface;
+import boundary.DoctorManagementUI;
+import boundary.DoctorUI;
+import entity.Appointment;
 import entity.Doctor;
 import utility.ReadWriteFile;
+import java.time.LocalDate;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-
-public class DoctorControl extends JFrame {
-    private DoctorUI parentUI;
+public class DoctorControl {
     private ListInterface<Doctor> doctorList;
-    private DefaultTableModel doctorTableModel;
-    private JTable doctorTable;
-    private JButton btnAdd;
+    private ListInterface<Appointment> appointmentList;
     private ReadWriteFile rwf = new ReadWriteFile();
     private final String DOCTOR_FILE = "src/main/java/Data File/doctors";
+    
+    private DoctorManagementUI view;
+    private DoctorUI parentUI;
 
-    public DoctorControl(DoctorUI parentUI, ListInterface<Doctor> doctorList) {
+    public DoctorControl(DoctorUI parentUI, ListInterface<Doctor> doctorList, ListInterface<Appointment> appointmentList) {
         this.parentUI = parentUI;
         this.doctorList = doctorList;
-
-        setTitle("Manage Doctors");
-        setSize(600, 400);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-        initComponents();
-        loadDoctorsToTable(); // ✅ use only the existing list
-        checkAddButtonStatus();
+        this.appointmentList = appointmentList;
+        
+        this.view = new DoctorManagementUI(this);
+        refreshView();
+        view.setVisible(true);
     }
 
-    private void initComponents() {
-        setLayout(new BorderLayout());
-
-        doctorTableModel = new DefaultTableModel(new String[]{"ID", "Name", "Contact", "Room"}, 0);
-        doctorTable = new JTable(doctorTableModel);
-        add(new JScrollPane(doctorTable), BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        btnAdd = new JButton("Add");
-        JButton btnUpdate = new JButton("Update");
-        JButton btnDelete = new JButton("Delete");
-        JButton btnBack = new JButton("Back");
-
-        buttonPanel.add(btnAdd);
-        buttonPanel.add(btnUpdate);
-        buttonPanel.add(btnDelete);
-        buttonPanel.add(btnBack);
-        add(buttonPanel, BorderLayout.SOUTH);
-
-        btnAdd.addActionListener(e -> addDoctor());
-        btnUpdate.addActionListener(e -> updateDoctor());
-        btnDelete.addActionListener(e -> deleteDoctor());
-        btnBack.addActionListener(e -> {
-            this.dispose();
-            parentUI.setVisible(true);
-        });
+    private void refreshView() {
+        view.displayDoctors(doctorList);
+        view.setAddButtonEnabled(doctorList.getLength() < 4);
     }
 
-    private void loadDoctorsToTable() {
-        doctorTableModel.setRowCount(0);
-        for (int i = 1; i <= doctorList.getLength(); i++) {
-            Doctor d = doctorList.getEntry(i);
-            doctorTableModel.addRow(new Object[]{d.getDoctorID(), d.getName(), d.getContactNumber(), d.getRoomNumber()});
-        }
-    }
-
-    private void addDoctor() {
+    public void addDoctor() {
         if (doctorList.getLength() >= 4) {
-            JOptionPane.showMessageDialog(this, "Maximum of 4 doctors allowed!");
+            view.showMessage("Maximum of 4 doctors allowed!", "Limit Reached", 0);
             return;
         }
+        Doctor newDoctor = view.showDoctorInputDialog(null);
+        if (newDoctor != null) {
+            doctorList.add(newDoctor);
+            rwf.writeDoctorsToFile(DOCTOR_FILE, doctorList);
+            refreshView();
+            view.showMessage("Doctor added successfully!", "Success", 1);
+        }
+    }
 
-        JTextField idField = new JTextField();
-        JTextField nameField = new JTextField();
-        JTextField contactField = new JTextField();
-        JTextField roomField = new JTextField();
-        Object[] fields = {"ID:", idField, "Name:", nameField, "Contact:", contactField, "Room:", roomField};
+    public void updateDoctor() {
+        String doctorId = view.getSelectedDoctorId();
+        if (doctorId == null) return;
+        
+        Doctor doctorToUpdate = findDoctorById(doctorId);
+        if (doctorToUpdate == null) return;
 
-        int option = JOptionPane.showConfirmDialog(this, fields, "Add Doctor", JOptionPane.OK_CANCEL_OPTION);
-        if (option == JOptionPane.OK_OPTION) {
-            String id = idField.getText().trim();
-            String name = nameField.getText().trim();
-            String contact = contactField.getText().trim();
-            String room = roomField.getText().trim();
-
-            if (id.isEmpty() || name.isEmpty() || contact.isEmpty() || room.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "All fields must be filled!", "Error", JOptionPane.ERROR_MESSAGE);
+        Doctor updatedDoctor = view.showDoctorInputDialog(doctorToUpdate);
+        if (updatedDoctor != null) {
+            doctorToUpdate.setName(updatedDoctor.getName());
+            doctorToUpdate.setContactNumber(updatedDoctor.getContactNumber());
+            doctorToUpdate.setRoomNumber(updatedDoctor.getRoomNumber());
+            rwf.writeDoctorsToFile(DOCTOR_FILE, doctorList);
+            refreshView();
+            view.showMessage("Doctor updated successfully!", "Success", 1);
+        }
+    }
+    
+    public void deleteDoctor() {
+        String doctorId = view.getSelectedDoctorId();
+        if (doctorId == null) return;
+        
+        for (int i = 1; i <= doctorList.getLength(); i++) {
+            if (doctorList.getEntry(i).getDoctorID().equals(doctorId)) {
+                doctorList.remove(i);
+                rwf.writeDoctorsToFile(DOCTOR_FILE, doctorList);
+                refreshView();
+                view.showMessage("Doctor deleted successfully!", "Success", 1);
                 return;
             }
-
-            doctorList.add(new Doctor(id, name, contact, room));
-            rwf.writeDoctorsToFile(DOCTOR_FILE, doctorList); // ✅ save
-            loadDoctorsToTable();
-            JOptionPane.showMessageDialog(this, "Doctor added successfully!");
-            checkAddButtonStatus();
         }
     }
 
-    private void updateDoctor() {
-        int row = doctorTable.getSelectedRow();
-        if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Select a doctor to update!");
+    public void generatePatientLoadReport() {
+        if (doctorList.isEmpty()) {
+            view.showMessage("No doctors available to generate a report.", "Error", 0);
             return;
         }
 
-        String id = (String) doctorTableModel.getValueAt(row, 0);
-        Doctor d = null;
-        for (int i = 1; i <= doctorList.getLength(); i++) {
-            if (doctorList.getEntry(i).getDoctorID().equals(id)) {
-                d = doctorList.getEntry(i);
-                break;
-            }
+        String[] reportTypes = {"Weekly Patient Load", "Monthly Patient Load"};
+        String selectedType = (String) javax.swing.JOptionPane.showInputDialog(
+                null, 
+                "Select the report type:",
+                "Generate Patient Load Report", 
+                javax.swing.JOptionPane.QUESTION_MESSAGE, 
+                null, 
+                reportTypes, 
+                reportTypes[0]);
+
+        if (selectedType == null) return;
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate;
+        LocalDate endDate;
+        String reportTitle;
+
+        if (selectedType.equals("Weekly Patient Load")) {
+            startDate = today.with(java.time.DayOfWeek.MONDAY);
+            endDate = today.with(java.time.DayOfWeek.SUNDAY);
+            reportTitle = "Weekly Patient Load Report (" + startDate + " to " + endDate + ")";
+        } else {
+            startDate = today.withDayOfMonth(1);
+            endDate = today.withDayOfMonth(today.lengthOfMonth());
+            reportTitle = "Monthly Patient Load for " + today.getMonth().toString() + " " + today.getYear();
         }
 
-        if (d != null) {
-            JTextField nameField = new JTextField(d.getName());
-            JTextField contactField = new JTextField(d.getContactNumber());
-            JTextField roomField = new JTextField(d.getRoomNumber());
-            Object[] fields = {"Name:", nameField, "Contact:", contactField, "Room:", roomField};
+        java.util.Map<String, Integer> patientCountMap = new java.util.HashMap<>();
+        for(int i = 1; i <= doctorList.getLength(); i++){
+            patientCountMap.put(doctorList.getEntry(i).getDoctorID(), 0);
+        }
 
-            int option = JOptionPane.showConfirmDialog(this, fields, "Update Doctor", JOptionPane.OK_CANCEL_OPTION);
-            if (option == JOptionPane.OK_OPTION) {
-                String name = nameField.getText().trim();
-                String contact = contactField.getText().trim();
-                String room = roomField.getText().trim();
+        for (int i = 1; i <= appointmentList.getLength(); i++) {
+            Appointment app = appointmentList.getEntry(i);
+            LocalDate appDate = app.getAppointmentDate();
 
-                if (name.isEmpty() || contact.isEmpty() || room.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "All fields must be filled!", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
+            if (!appDate.isBefore(startDate) && !appDate.isAfter(endDate) && !app.getStatus().equals("Canceled")) {
+                if (app.getDoctor() != null) {
+                    String docID = app.getDoctor().getDoctorID();
+                    patientCountMap.put(docID, patientCountMap.getOrDefault(docID, 0) + 1);
                 }
-
-                d.setName(name);
-                d.setContactNumber(contact);
-                d.setRoomNumber(room);
-                rwf.writeDoctorsToFile(DOCTOR_FILE, doctorList); // ✅ save
-                loadDoctorsToTable();
-                JOptionPane.showMessageDialog(this, "Doctor updated successfully!");
             }
         }
+
+        StringBuilder reportContent = new StringBuilder();
+        reportContent.append(reportTitle).append("\n");
+        reportContent.append("------------------------------------------\n");
+        reportContent.append(String.format("%-20s | %s\n", "Doctor Name", "Total Patients Met"));
+        reportContent.append("------------------------------------------\n");
+
+        for (int i = 1; i <= doctorList.getLength(); i++) {
+            Doctor doctor = doctorList.getEntry(i);
+            int count = patientCountMap.getOrDefault(doctor.getDoctorID(), 0);
+            reportContent.append(String.format("%-20s | %d patients\n", doctor.getName(), count));
+        }
+        
+        view.showReport(reportContent.toString(), "Patient Load Report");
     }
 
-    private void deleteDoctor() {
-        int row = doctorTable.getSelectedRow();
-        if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Select a doctor to delete!");
-            return;
-        }
+    public void close() {
+        view.dispose();
+        parentUI.setVisible(true);
+    }
 
-        String id = (String) doctorTableModel.getValueAt(row, 0);
+    public void closeToMain() {
+        view.dispose();
+        parentUI.dispose();
+        parentUI.getMainUI().setVisible(true);
+    }
+    
+    private Doctor findDoctorById(String id) {
         for (int i = 1; i <= doctorList.getLength(); i++) {
             if (doctorList.getEntry(i).getDoctorID().equals(id)) {
-                doctorList.remove(i);
-                rwf.writeDoctorsToFile(DOCTOR_FILE, doctorList); // ✅ save
-                JOptionPane.showMessageDialog(this, "Doctor deleted successfully!");
-                break;
+                return doctorList.getEntry(i);
             }
         }
-        loadDoctorsToTable();
-        checkAddButtonStatus();
-    }
-
-    private void checkAddButtonStatus() {
-        btnAdd.setEnabled(doctorList.getLength() < 4);
+        return null;
     }
 }
-

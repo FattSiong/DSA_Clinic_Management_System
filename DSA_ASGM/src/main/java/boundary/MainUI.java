@@ -119,12 +119,12 @@ public class MainUI extends JFrame {
                 new PatientListUI(patientControl, queueControl).setVisible(true);
             }
         });
-
+       
         btnDoctor.addActionListener(e -> {
-            System.out.println("Navigating to Doctor Management Module...");
-            new DoctorUI(this, doctorList, scheduleList, appointmentList).setVisible(true); // ✅ add appointmentList
-            this.setVisible(false);
-        });
+    System.out.println("Navigating to Doctor Management Module...");
+    new DoctorUI(this, doctorList, scheduleList, appointmentList).setVisible(true);
+    this.setVisible(false);
+});
 
         btnConsultation.addActionListener(e -> {
             new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList, scheduleList, treatmentList).setVisible(true);
