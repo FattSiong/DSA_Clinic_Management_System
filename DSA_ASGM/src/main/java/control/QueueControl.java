@@ -78,6 +78,17 @@ public class QueueControl {
         }
     }
 
+    public void loadQueueData() {
+        PatientControl patientControl = new PatientControl();
+        ListInterface<Patient> patientList = patientControl.getPatientList();
+        // Clear the existing list before reloading
+        if (queueList != null) {
+            queueList.clear();
+        }
+        // Call the file manager to read the data into the list
+        fileManager.readQueuesFromFile(QUEUES_FILE, queueList, patientList, doctorList);
+    }
+
     public ListInterface<Queue> getQueueList() {
         return this.queueList;
     }

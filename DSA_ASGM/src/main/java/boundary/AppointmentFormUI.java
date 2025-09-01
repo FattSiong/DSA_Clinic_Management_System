@@ -10,6 +10,7 @@ import entity.Appointment;
 import entity.Doctor;
 import entity.Patient;
 import control.PatientControl;
+import entity.Schedule;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
@@ -44,6 +45,7 @@ public class AppointmentFormUI extends JFrame {
     private ListInterface<Patient> patientList;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Appointment> appointmentList;
+    private ListInterface<Schedule> scheduleList;
     private AppointmentControl appointmentControl;
     private PatientControl patientControl;
     private ReadWriteFile fileManager;
@@ -52,11 +54,11 @@ public class AppointmentFormUI extends JFrame {
     /**
      * Constructor for booking a brand new appointment.
      */
-    public AppointmentFormUI(ConsultationUI parent, ReadWriteFile fileManager, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Appointment> aList) {
+    public AppointmentFormUI(ConsultationUI parent, ReadWriteFile fileManager, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Schedule> sList, ListInterface<Appointment> aList) {
         this.parentUI = parent;
         this.fileManager = fileManager;
         this.appointmentList = aList;
-        this.appointmentControl = new AppointmentControl(aList, pList, dList, fileManager); // Initialize control class
+        this.appointmentControl = new AppointmentControl(aList, pList, dList, sList, fileManager); // Initialize control class
         this.patientControl = new PatientControl(pList);
 
         initUI(true);
@@ -67,11 +69,11 @@ public class AppointmentFormUI extends JFrame {
     /**
      * Constructor for scheduling a follow-up appointment.
      */
-    public AppointmentFormUI(ConsultationUI parent, ReadWriteFile fileManager, Patient patient, Doctor doctor, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Appointment> aList) {
+    public AppointmentFormUI(ConsultationUI parent, ReadWriteFile fileManager, Patient patient, Doctor doctor, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Schedule> sList, ListInterface<Appointment> aList) {
         this.parentUI = parent;
         this.fileManager = fileManager;
         this.appointmentList = aList;
-        this.appointmentControl = new AppointmentControl(aList, pList, dList, fileManager);  // Control class for follow-up
+        this.appointmentControl = new AppointmentControl(aList, pList, dList, sList, fileManager);  // Control class for follow-up
         this.patientControl = new PatientControl(pList);
 
         initUI(false);
@@ -253,9 +255,9 @@ public class AppointmentFormUI extends JFrame {
     }
 
     private void populateTimeSlots() {
-        for (int hour = 9; hour <= 17; hour++) {
+        for (int hour = 0; hour <= 23; hour++) {
             timeSlotComboBox.addItem(String.format("%02d:00", hour));
-            if (hour < 17) {
+            if (hour < 23) {
                 timeSlotComboBox.addItem(String.format("%02d:30", hour));
             }
         }
