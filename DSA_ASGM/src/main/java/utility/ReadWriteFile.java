@@ -11,6 +11,7 @@ import entity.Consultation;
 import entity.Doctor;
 import entity.Medicine;
 import entity.Patient;
+import entity.Queue;
 import entity.Schedule;
 import entity.Treatment;
 import java.io.BufferedReader;
@@ -19,7 +20,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.Iterator;
 
 /**
@@ -30,6 +33,7 @@ public class ReadWriteFile {
 
     // File paths (constants for easy management)
     private static final String PATIENTS_FILE = "src/main/java/Data File/patients";
+    private static final String QUEUES_FILE = "src/main/java/Data File/queues";
     private static final String DOCTORS_FILE = "src/main/java/Data File/doctors";
     private static final String MEDICINES_FILE = "src/main/java/Data File/medicines";
     private static final String SCHEDULES_FILE = "src/main/java/Data File/schedules";
@@ -44,6 +48,7 @@ public class ReadWriteFile {
      * dependencies.
      *
      * @param patientList
+     * @param queueList
      * @param doctorList
      * @param medicineList
      * @param scheduleList
@@ -53,6 +58,7 @@ public class ReadWriteFile {
      */
     public void loadAllData(
             ListInterface<Patient> patientList,
+            ListInterface<Queue> queueList,
             ListInterface<Doctor> doctorList,
             ListInterface<Medicine> medicineList,
             ListInterface<Schedule> scheduleList,
@@ -66,16 +72,19 @@ public class ReadWriteFile {
         readMedicinesFromFile(MEDICINES_FILE, medicineList);
 
         // Load dependent entities
+        readQueuesFromFile(QUEUES_FILE, queueList, patientList, doctorList);
         readSchedulesFromFile(SCHEDULES_FILE, scheduleList, doctorList);
         readAppointmentsFromFile(APPOINTMENTS_FILE, appointmentList, patientList, doctorList);
-        readConsultationsFromFile(CONSULTATIONS_FILE, consultationList, appointmentList, patientList, doctorList);
+        readConsultationsFromFile(CONSULTATIONS_FILE, consultationList, appointmentList, queueList);
         readTreatmentsFromFile(TREATMENTS_FILE, treatmentList, consultationList, medicineList);
     }
 
     /**
      * Saves all current data back to the respective text files. This should be
      * called when the application is about to exit.
+     *
      * @param patientList
+     * @param queueList
      * @param doctorList
      * @param medicineList
      * @param scheduleList
@@ -85,6 +94,7 @@ public class ReadWriteFile {
      */
     public void saveAllData(
             ListInterface<Patient> patientList,
+            ListInterface<Queue> queueList,
             ListInterface<Doctor> doctorList,
             ListInterface<Medicine> medicineList,
             ListInterface<Schedule> scheduleList,
@@ -93,6 +103,7 @@ public class ReadWriteFile {
             ListInterface<Treatment> treatmentList) {
 
         writePatientsToFile(PATIENTS_FILE, patientList);
+        writeQueuesToFile(QUEUES_FILE, queueList);
         writeDoctorsToFile(DOCTORS_FILE, doctorList);
         writeMedicinesToFile(MEDICINES_FILE, medicineList);
         writeSchedulesToFile(SCHEDULES_FILE, scheduleList);
@@ -102,7 +113,7 @@ public class ReadWriteFile {
     }
 
     // --- READ Methods ---
-    public static void readPatientsFromFile(String filename, ListInterface<Patient> patientList) {
+    public void readPatientsFromFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -113,6 +124,30 @@ public class ReadWriteFile {
             }
         } catch (IOException e) {
             System.err.println("Error reading patients file: " + e.getMessage());
+        }
+    }
+    
+    public void readQueuesFromFile(String filename, ListInterface<Queue> queueList, ListInterface<Patient> patientList, ListInterface<Doctor> doctorList) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split("\\|");
+                int queueId = Integer.parseInt(data[0]);
+                int queueNumber = Integer.parseInt(data[1]);
+                Patient patient = findPatientById(patientList, data[2]);
+                Doctor doctor = data[3].equals("N/A") ? null : findDoctorById(doctorList, data[3]);
+                LocalDateTime entryTime = LocalDateTime.parse(data[4]);
+                LocalDateTime exitTime = data[5].equals("N/A") ? null : LocalDateTime.parse(data[5]);
+                String status = data[6];
+
+                if (patient != null) {
+                    // Use the full constructor to recreate the object
+                    Queue queueEntry = new Queue(queueId, queueNumber, patient, doctor, entryTime, exitTime, status);
+                queueList.add(queueEntry);
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Error reading queues file: " + e.getMessage());
         }
     }
 
@@ -170,33 +205,43 @@ public class ReadWriteFile {
             System.err.println("Error reading appointments file: " + e.getMessage());
         }
     }
-    
-    public void readConsultationsFromFile(String filename, ListInterface<Consultation> consultationList, ListInterface<Appointment> appointmentList, ListInterface<Patient> patientList, ListInterface<Doctor> doctorList) {
+
+    public void readConsultationsFromFile(String filename, ListInterface<Consultation> consultationList, ListInterface<Appointment> appointmentList, ListInterface<Queue> queueList) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] data = line.split("\\|");
-                String consultationID = data[0];
-                String patientID = data[1];
-                String doctorID = data[2];
-                String appointmentID = data[3];
-                String diagnosis = data[4];
-                String notes = data[5];
-                LocalDate consultationDate = LocalDate.parse(data[6]);
+                try {
+                    String[] data = line.split("\\|");
+                    if (data.length < 7) {
+                        System.err.println("Skipping malformed line in consultations file: " + line);
+                        continue;
+                    }
 
-                if (appointmentID.equals("N/A")) {
-                    // This is a walk-in consultation
-                    Patient patient = findPatientById(patientList, patientID);
-                    Doctor doctor = findDoctorById(doctorList, doctorID);
-                    if (patient != null && doctor != null) {
-                        consultationList.add(new Consultation(consultationID, patient, doctor, diagnosis, notes, consultationDate));
+                    String consultationID = data[0];
+                    String sourceID = data[3]; // The source ID (Appointment or Queue)
+                    String diagnosis = data[4];
+                    String notes = data[5];
+                    LocalDate consultationDate = LocalDate.parse(data[6]);
+
+                    if (sourceID.startsWith("A")) {
+                        // It's a scheduled consultation from an appointment
+                        Appointment appointment = findAppointmentById(appointmentList, sourceID);
+                        if (appointment != null) {
+                            consultationList.add(new Consultation(consultationID, appointment, diagnosis, notes, consultationDate));
+                        } else {
+                            System.err.println("Skipping consultation " + consultationID + ": Linked appointment " + sourceID + " not found.");
+                        }
+                    } else if (sourceID.startsWith("Q")) {
+                        // It's a walk-in consultation from the queue
+                        Queue queue = findQueueById(queueList, Integer.parseInt(sourceID.substring(1)));
+                        if (queue != null) {
+                            consultationList.add(new Consultation(consultationID, queue, diagnosis, notes, consultationDate));
+                        } else {
+                            System.err.println("Skipping consultation " + consultationID + ": Linked queue " + sourceID + " not found.");
+                        }
                     }
-                } else {
-                    // This is a scheduled consultation
-                    Appointment appointment = findAppointmentById(appointmentList, appointmentID);
-                    if (appointment != null) {
-                        consultationList.add(new Consultation(consultationID, appointment, diagnosis, notes, consultationDate));
-                    }
+                } catch (ArrayIndexOutOfBoundsException | DateTimeParseException | NumberFormatException e) {
+                    System.err.println("Skipping malformed line in consultations file: " + line);
                 }
             }
         } catch (IOException e) {
@@ -228,7 +273,7 @@ public class ReadWriteFile {
     }
 
     // --- WRITE Methods ---
-    public static void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
+    public void writePatientsToFile(String filename, ListInterface<Patient> patientList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             Iterator<Patient> it = patientList.getIterator();
             while (it.hasNext()) {
@@ -240,6 +285,33 @@ public class ReadWriteFile {
             }
         } catch (IOException e) {
             System.err.println("Error writing patients file: " + e.getMessage());
+        }
+    }
+    
+    public void writeQueuesToFile(String filename, ListInterface<Queue> queueList) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            if (queueList == null) return;
+            Iterator<Queue> it = queueList.getIterator();
+            while (it.hasNext()) {
+                Queue q = it.next();
+                // Use "N/A" as a placeholder for null values
+                String doctorId = (q.getDoctor() != null) ? q.getDoctor().getDoctorID() : "N/A";
+                String exitTimeStr = (q.getExitTime() != null) ? q.getExitTime().toString() : "N/A";
+
+                String line = String.join("|",
+                        String.valueOf(q.getQueueId()),
+                        String.valueOf(q.getQueueNumber()),
+                        q.getPatient().getPatientID(),
+                        doctorId,
+                        q.getEntryTime().toString(),
+                        exitTimeStr,
+                        q.getStatus()
+                );
+                writer.write(line);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.err.println("Error writing queues file: " + e.getMessage());
         }
     }
 
@@ -298,22 +370,28 @@ public class ReadWriteFile {
             System.err.println("Error writing appointments file: " + e.getMessage());
         }
     }
-    
+
     public void writeConsultationsToFile(String filename, ListInterface<Consultation> consultationList) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             Iterator<Consultation> it = consultationList.getIterator();
-            while(it.hasNext()){
+            while (it.hasNext()) {
                 Consultation c = it.next();
-                String appointmentIdStr = (c.getAppointment() != null) ? c.getAppointment().getAppointmentID() : "N/A";
+                String sourceIdStr = "";
+                // Determine if it's an appointment or queue and get the correct ID
+                if (c.getAppointment() != null) {
+                    sourceIdStr = c.getAppointment().getAppointmentID();
+                } else if (c.getQueue() != null) {
+                    sourceIdStr = "Q" + c.getQueue().getQueueId();
+                }
                 
-                String line = String.join("|", 
-                    c.getConsultationID(),
-                    c.getPatient().getPatientID(),
-                    c.getDoctor().getDoctorID(),
-                    appointmentIdStr,
-                    c.getDiagnosis(),
-                    c.getNotes(),
-                    c.getConsultationDate().toString()
+                String line = String.join("|",
+                        c.getConsultationID(),
+                        c.getPatient().getPatientID(),
+                        c.getDoctor().getDoctorID(),
+                        sourceIdStr,
+                        c.getDiagnosis(),
+                        c.getNotes(),
+                        c.getConsultationDate().toString()
                 );
                 writer.write(line);
                 writer.newLine();
@@ -346,12 +424,13 @@ public class ReadWriteFile {
     }
 
     // --- Helper Methods to Find Objects by ID (Renamed to avoid erasure clash) ---
-    
     private Patient findPatientById(ListInterface<Patient> list, String id) {
         Iterator<Patient> it = list.getIterator();
         while (it.hasNext()) {
             Patient item = it.next();
-            if (item.getPatientID().equals(id)) return item;
+            if (item.getPatientID().equals(id)) {
+                return item;
+            }
         }
         return null;
     }
@@ -360,34 +439,53 @@ public class ReadWriteFile {
         Iterator<Doctor> it = list.getIterator();
         while (it.hasNext()) {
             Doctor item = it.next();
-            if (item.getDoctorID().equals(id)) return item;
+            if (item.getDoctorID().equals(id)) {
+                return item;
+            }
         }
         return null;
     }
     
+    private Queue findQueueById(ListInterface<Queue> list, int id) {
+        Iterator<Queue> it = list.getIterator();
+        while (it.hasNext()) {
+            Queue item = it.next();
+            if (item.getQueueId() == id) {
+                return item;
+            }
+        }
+        return null;
+    }
+
     private Medicine findMedicineById(ListInterface<Medicine> list, String id) {
         Iterator<Medicine> it = list.getIterator();
         while (it.hasNext()) {
             Medicine item = it.next();
-            if (item.getMedicineID().equals(id)) return item;
+            if (item.getMedicineID().equals(id)) {
+                return item;
+            }
         }
         return null;
     }
-    
+
     private Appointment findAppointmentById(ListInterface<Appointment> list, String id) {
         Iterator<Appointment> it = list.getIterator();
         while (it.hasNext()) {
             Appointment item = it.next();
-            if (item.getAppointmentID().equals(id)) return item;
+            if (item.getAppointmentID().equals(id)) {
+                return item;
+            }
         }
         return null;
     }
-    
+
     private Consultation findConsultationById(ListInterface<Consultation> list, String id) {
         Iterator<Consultation> it = list.getIterator();
         while (it.hasNext()) {
             Consultation item = it.next();
-            if (item.getConsultationID().equals(id)) return item;
+            if (item.getConsultationID().equals(id)) {
+                return item;
+            }
         }
         return null;
     }

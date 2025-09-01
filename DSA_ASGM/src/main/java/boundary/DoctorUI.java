@@ -1,61 +1,84 @@
 package boundary;
 
-import control.ManageDoctorUI;
-import control.ManageScheduleUI;
 import adt.ListInterface;
+import control.DoctorControl;
+import control.ScheduleControl;
+import entity.Appointment;
 import entity.Doctor;
 import entity.Schedule;
-import boundary.MainUI;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class DoctorUI extends JFrame {
+    private MainUI mainUI;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Schedule> scheduleList;
-    private MainUI mainUI;
+    private ListInterface<Appointment> appointmentList;
 
-    public DoctorUI(MainUI mainUI, ListInterface<Doctor> doctorList, ListInterface<Schedule> scheduleList) {
+    public DoctorUI(MainUI mainUI,
+                    ListInterface<Doctor> doctorList,
+                    ListInterface<Schedule> scheduleList,
+                    ListInterface<Appointment> appointmentList) {
         this.mainUI = mainUI;
         this.doctorList = doctorList;
         this.scheduleList = scheduleList;
+        this.appointmentList = appointmentList;
 
-        setTitle("Doctor Management Module");
-        setSize(400, 300);
+        // Use a consistent window title
+        setTitle("Consultation & Appointment Dashboard");
+        setSize(420, 300); // Slightly taller to accommodate new style
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        // Set the main background color
+        getContentPane().setBackground(UIStyle.MAIN_BACKGROUND);
 
         initComponents();
     }
 
+    public MainUI getMainUI() {
+        return mainUI;
+    }
+
     private void initComponents() {
-        JPanel panel = new JPanel(new GridLayout(3, 1, 15, 15));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
+        setLayout(new BorderLayout(10, 10));
 
-        JButton btnManageDoctors = new JButton("Manage Doctors");
-        JButton btnManageSchedules = new JButton("Manage Schedules");
-        JButton btnBackMain = new JButton("Back to Main");
+        // ======== HEADER PANEL (NORTH) ========
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(UIStyle.HEADER_BACKGROUND);
+        JLabel lblTitle = UIStyle.createHeaderLabel("Doctor Management Module");
+        headerPanel.add(lblTitle, BorderLayout.CENTER);
+        add(headerPanel, BorderLayout.NORTH);
 
-        btnManageDoctors.addActionListener(e -> {
-            this.setVisible(false);
-            new ManageDoctorUI(this, doctorList).setVisible(true);
-        });
+        // ======== BUTTONS PANEL (CENTER) ========
+        JPanel panel = new JPanel(new GridLayout(3, 1, 10, 10));
+        panel.setBackground(UIStyle.MAIN_BACKGROUND);
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
-        btnManageSchedules.addActionListener(e -> {
-            this.setVisible(false);
-            new ManageScheduleUI(this, scheduleList, doctorList).setVisible(true);
-        });
-
-
-        btnBackMain.addActionListener(e -> {
-            this.dispose();
-            mainUI.setVisible(true);
-        });
+        // Create styled buttons using the UIStyle helper class
+        JButton btnManageDoctors = UIStyle.createStyledButton("Manage Doctors", UIStyle.SECONDARY_ACTION_COLOR);
+        JButton btnManageSchedules = UIStyle.createStyledButton("Manage Schedules", UIStyle.SECONDARY_ACTION_COLOR);
+        JButton btnBackMain = UIStyle.createStyledButton("Back to Main", new Color(120, 120, 120));
 
         panel.add(btnManageDoctors);
         panel.add(btnManageSchedules);
         panel.add(btnBackMain);
 
-        add(panel);
+        add(panel, BorderLayout.CENTER);
+
+        btnManageDoctors.addActionListener(e -> {
+            this.setVisible(false);
+            new DoctorControl(this, doctorList, appointmentList); 
+        });
+
+        btnManageSchedules.addActionListener(e -> {
+            this.setVisible(false);
+            new ScheduleControl(this, scheduleList, doctorList, appointmentList); 
+        });
+
+        btnBackMain.addActionListener(e -> {
+            this.dispose();
+            mainUI.setVisible(true);
+        });
     }
 }
