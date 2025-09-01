@@ -1,4 +1,3 @@
-// Name: <Your Name>
 package boundary;
 
 import adt.DoublyLinkedList;
@@ -10,6 +9,7 @@ import entity.Treatment;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.util.Iterator;
 
@@ -18,7 +18,7 @@ public class CreateTreatmentDialog extends JDialog {
     private TreatmentController treatmentController;
     private Consultation consultation;
 
-    // UI Components
+    
     private JTable availableMedsTable;
     private JList<String> prescribedMedsList;
     private DefaultTableModel availableMedsModel;
@@ -29,50 +29,50 @@ public class CreateTreatmentDialog extends JDialog {
     private JTextField tfMedSearch;
     private JButton btnMedSearch, btnMedClear;
 
-    // Data holders
+    
     private ListInterface<Medicine> prescribedMedicines = new DoublyLinkedList<>();
 
     public CreateTreatmentDialog(Frame owner, TreatmentController controller, Consultation consultation) {
-        super(owner, "Create Treatment Record", true); // true for modal
+        super(owner, "Create Treatment Record", true);
         this.treatmentController = controller;
         this.consultation = consultation;
 
-        setSize(850, 700); // Adjusted size for the new layout
+        setSize(850, 700);
         setLocationRelativeTo(owner);
         setLayout(new BorderLayout(10, 10));
 
         initComponents();
         addListeners();
-        populateAvailableMedicines("", "Name"); // Initial population with no filter
+        populateAvailableMedicines("", "Name");
     }
 
     private void initComponents() {
-        // --- Main Panel with Padding ---
+        
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // --- Top Info Panel ---
-        JPanel infoPanel = new JPanel(new GridLayout(4, 2, 5, 5)); // Changed to 4 rows
+        
+        JPanel infoPanel = new JPanel(new GridLayout(4, 2, 5, 5));
         infoPanel.setBorder(BorderFactory.createTitledBorder("Consultation Details"));
         infoPanel.add(new JLabel("Patient Name:"));
         infoPanel.add(new JLabel(consultation.getPatient().getName()));
         infoPanel.add(new JLabel("Doctor Name:"));
         infoPanel.add(new JLabel(consultation.getDoctor().getName()));
         infoPanel.add(new JLabel("Diagnosis:"));
-        infoPanel.add(new JLabel(consultation.getDiagnosis())); // Added Diagnosis
+        infoPanel.add(new JLabel(consultation.getDiagnosis()));
         infoPanel.add(new JLabel("Consultation Notes:"));
-        infoPanel.add(new JLabel(consultation.getNotes())); // Added Consultation Notes
+        infoPanel.add(new JLabel(consultation.getNotes()));
         mainPanel.add(infoPanel, BorderLayout.NORTH);
 
-        // --- Main Content Area using a Split Pane ---
+        
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setResizeWeight(0.7); // Give more initial space to the left side
+        splitPane.setResizeWeight(0.7);
 
-        // --- LEFT PANEL (Search, Table, Add/Remove Buttons) ---
+        
         JPanel leftPanel = new JPanel(new BorderLayout(10, 10));
         leftPanel.setBorder(BorderFactory.createTitledBorder("Available Medicines"));
 
-        // Search bar panel
+        
         JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
         JPanel searchCriteriaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         searchCriteriaPanel.add(new JLabel("Search By:"));
@@ -92,16 +92,23 @@ public class CreateTreatmentDialog extends JDialog {
         searchPanel.add(searchButtonPanel, BorderLayout.EAST);
         leftPanel.add(searchPanel, BorderLayout.NORTH);
 
-        // Available Medicines Table (Center)
-        String[] availableCols = {"ID", "Name", "Description", "Stock"};
+        
+        String[] availableCols = {"ID", "Name", "Description"}; 
         availableMedsModel = new DefaultTableModel(availableCols, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         availableMedsTable = new JTable(availableMedsModel);
         availableMedsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        
+        TableColumnModel columnModel = availableMedsTable.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(50);
+        columnModel.getColumn(1).setPreferredWidth(120);
+        columnModel.getColumn(2).setPreferredWidth(330);
+        
         leftPanel.add(new JScrollPane(availableMedsTable), BorderLayout.CENTER);
 
-        // Add/Remove Buttons Panel (South)
+        
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         btnAddMed = new JButton("Add >>");
         buttonPanel.add(btnAddMed);
@@ -109,7 +116,7 @@ public class CreateTreatmentDialog extends JDialog {
         
         splitPane.setLeftComponent(leftPanel);
 
-        // --- RIGHT PANEL (Prescribed List and Remove Button) ---
+        
         JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
         rightPanel.setBorder(BorderFactory.createTitledBorder("Prescribed"));
 
@@ -126,10 +133,10 @@ public class CreateTreatmentDialog extends JDialog {
         splitPane.setRightComponent(rightPanel);
         mainPanel.add(splitPane, BorderLayout.CENTER);
 
-        // --- Bottom Panel for Notes and Actions ---
+        
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
         
-        // Treatment Notes
+        
         taTreatmentNotes = new JTextArea(5, 20);
         taTreatmentNotes.setLineWrap(true);
         taTreatmentNotes.setWrapStyleWord(true);
@@ -137,7 +144,7 @@ public class CreateTreatmentDialog extends JDialog {
         notesScrollPane.setBorder(BorderFactory.createTitledBorder("Treatment Notes / Details"));
         bottomPanel.add(notesScrollPane, BorderLayout.CENTER);
 
-        // Save/Cancel Buttons
+        
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnSave = new JButton("Save Treatment");
         btnCancel = new JButton("Cancel");
@@ -151,7 +158,7 @@ public class CreateTreatmentDialog extends JDialog {
     }
     
     private void populateAvailableMedicines(String searchTerm, String searchBy) {
-        availableMedsModel.setRowCount(0); // Clear the table first
+        availableMedsModel.setRowCount(0);
 
         ListInterface<Medicine> medsToShow = treatmentController.searchMedicines(searchTerm, searchBy);
         Iterator<Medicine> it = medsToShow.getIterator();
@@ -160,8 +167,7 @@ public class CreateTreatmentDialog extends JDialog {
             Object[] row = {
                 med.getMedicineID(),
                 med.getName(),
-                med.getDescription(),
-                med.getStockQuantity()
+                med.getDescription()
             };
             availableMedsModel.addRow(row);
         }
@@ -196,13 +202,13 @@ public class CreateTreatmentDialog extends JDialog {
         String medId = (String) availableMedsModel.getValueAt(selectedRow, 0);
         String medName = (String) availableMedsModel.getValueAt(selectedRow, 1);
 
-        // Check for duplicates
+        
         if (prescribedMdsListModel.contains(medName)) {
             JOptionPane.showMessageDialog(this, "'" + medName + "' has already been prescribed.", "Duplicate Medicine", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Add to UI list and internal ADT list
+        
         prescribedMdsListModel.addElement(medName);
         prescribedMedicines.add(treatmentController.findMedicineById(medId));
     }
@@ -214,9 +220,9 @@ public class CreateTreatmentDialog extends JDialog {
             return;
         }
         
-        // Remove from UI list and internal ADT list
+        
         prescribedMdsListModel.remove(selectedIndex);
-        prescribedMedicines.remove(selectedIndex + 1); // ADT is 1-based index
+        prescribedMedicines.remove(selectedIndex + 1);
     }
 
     private void saveTreatment() {
@@ -230,12 +236,12 @@ public class CreateTreatmentDialog extends JDialog {
             return;
         }
         
-        // Use the controller to create the treatment
+        
         Treatment newTreatment = treatmentController.addTreatment(consultation, notes, prescribedMedicines);
 
         if (newTreatment != null) {
             JOptionPane.showMessageDialog(this, "Treatment record saved successfully!\nID: " + newTreatment.getTreatmentID(), "Success", JOptionPane.INFORMATION_MESSAGE);
-            dispose(); // Close the dialog
+            dispose(); 
         } else {
             JOptionPane.showMessageDialog(this, "Failed to save treatment record.", "Error", JOptionPane.ERROR_MESSAGE);
         }
