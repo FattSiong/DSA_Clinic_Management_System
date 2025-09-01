@@ -86,7 +86,7 @@ public class QueueDisplayUI extends javax.swing.JFrame {
 
     public void updateMainDisplay(Queue calledPatient, int roomNumber) {
         if (calledPatient != null) {
-            lblQueueNo.setText(String.format("%04d", calledPatient.getQueueId()));
+            lblQueueNo.setText(String.format("%04d", calledPatient.getQueueNumber()));
             lblName.setText(calledPatient.getPatient().getName());
             lblRoomNo.setText("Room " + roomNumber);
             blinkPanel(pnlCurrentQueue);
@@ -102,7 +102,7 @@ public class QueueDisplayUI extends javax.swing.JFrame {
             while (iterator.hasNext()) {
                 Queue queueItem = iterator.next();
                 Object[] rowData = {
-                    String.format("%04d", queueItem.getQueueId()),
+                    String.format("%04d", queueItem.getQueueNumber()),
                     queueItem.getPatient().getName()
                 };
                 model.addRow(rowData);
@@ -498,6 +498,7 @@ public class QueueDisplayUI extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     /**

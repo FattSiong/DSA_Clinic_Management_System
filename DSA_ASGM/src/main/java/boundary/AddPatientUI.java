@@ -99,12 +99,31 @@ public class AddPatientUI extends javax.swing.JFrame {
             return false;
         }
 
-        // 7. Validate Email Format (optional field, but if filled, must be valid)
+        // 7. Validate Email Format
         String email = txtEmail.getText().trim();
-        if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
+        if (email.isEmpty()) {
+            ShowMessage.showError(this, "Email address cannot be empty.");
+            txtEmail.requestFocus();
+            return false;
+        }
+
+        if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
             ShowMessage.showError(this, "Please enter a valid email address (e.g., user@example.com).");
             txtEmail.requestFocus();
             return false;
+        }
+
+        Patient existingPatientByEmail = patientControl.findPatientByEmail(email);
+        if (existingPatientByEmail != null && (patientToEdit == null || !existingPatientByEmail.getPatientID().equals(patientToEdit.getPatientID()))) {
+            ShowMessage.showError(this, "This Email is already registered to another patient.");
+            txtEmail.requestFocus();
+            return false;
+        }
+
+        // 8. Validate Medical History
+        String medicalHistory = txaMedicalHistory.getText().trim();
+        if (medicalHistory.isEmpty()) {
+            txaMedicalHistory.setText("None");
         }
 
         return true;
@@ -344,6 +363,7 @@ public class AddPatientUI extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed

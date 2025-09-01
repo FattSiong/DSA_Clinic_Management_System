@@ -29,7 +29,7 @@ public class AppointmentFormUI extends JFrame {
     private JTextField patientIcField = new JTextField(15);
     private JButton findPatientButton = new JButton("Find");
     private JTextField patientNameField = new JTextField(20);
-    
+
     private JComboBox<String> patientComboBox = new JComboBox<>();
     private JComboBox<String> doctorComboBox = new JComboBox<>();
     private JComboBox<Integer> dayComboBox = new JComboBox<>();
@@ -58,7 +58,7 @@ public class AppointmentFormUI extends JFrame {
         this.appointmentList = aList;
         this.appointmentControl = new AppointmentControl(aList, pList, dList, fileManager); // Initialize control class
         this.patientControl = new PatientControl(pList);
-        
+
         initUI(true);
         setTitle("Book New Appointment");
         populateDoctorComboBox(dList);
@@ -67,22 +67,22 @@ public class AppointmentFormUI extends JFrame {
     /**
      * Constructor for scheduling a follow-up appointment.
      */
-   public AppointmentFormUI(ConsultationUI parent, ReadWriteFile fileManager, Patient patient, Doctor doctor, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Appointment> aList) {
+    public AppointmentFormUI(ConsultationUI parent, ReadWriteFile fileManager, Patient patient, Doctor doctor, ListInterface<Patient> pList, ListInterface<Doctor> dList, ListInterface<Appointment> aList) {
         this.parentUI = parent;
         this.fileManager = fileManager;
         this.appointmentList = aList;
         this.appointmentControl = new AppointmentControl(aList, pList, dList, fileManager);  // Control class for follow-up
         this.patientControl = new PatientControl(pList);
-        
+
         initUI(false);
         setTitle("Schedule Follow-up for " + patient.getName());
-        
+
         this.selectedPatient = patient;
         patientIcField.setText(patient.getIcNumber());
         patientIcField.setEditable(false);
         findPatientButton.setEnabled(false);
         patientNameField.setText(patient.getName());
-        
+
         doctorComboBox.addItem(doctor.getName() + " (" + doctor.getDoctorID() + ")");
         doctorComboBox.setEnabled(false);
     }
@@ -96,11 +96,11 @@ public class AppointmentFormUI extends JFrame {
         // --- Form Panel ---
         JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
         formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        
+
         JPanel patientSearchPanel = new JPanel(new BorderLayout(5, 0));
         patientSearchPanel.add(patientIcField, BorderLayout.CENTER);
         patientSearchPanel.add(findPatientButton, BorderLayout.EAST);
-        
+
         formPanel.add(new JLabel("Patient IC Number:"));
         formPanel.add(patientSearchPanel);
 
@@ -108,10 +108,10 @@ public class AppointmentFormUI extends JFrame {
         patientNameField.setEditable(false);
         patientNameField.setBackground(new Color(230, 230, 230));
         formPanel.add(patientNameField);
-        
+
         formPanel.add(new JLabel("Doctor:"));
         formPanel.add(doctorComboBox);
-        
+
         // --- Date Picker Panel ---
         JPanel datePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         datePanel.add(dayComboBox);
@@ -119,10 +119,10 @@ public class AppointmentFormUI extends JFrame {
         datePanel.add(yearComboBox);
         formPanel.add(new JLabel("Date:"));
         formPanel.add(datePanel);
-        
+
         formPanel.add(new JLabel("Time:"));
         formPanel.add(timeSlotComboBox);
-        
+
         populateDatePickers();
         populateTimeSlots();
 
@@ -139,18 +139,18 @@ public class AppointmentFormUI extends JFrame {
         findPatientButton.addActionListener(e -> findPatient());
         saveButton.addActionListener(e -> saveAppointment());
         cancelButton.addActionListener(e -> dispose());
-        
+
         // Listeners to update days when month/year changes
         monthComboBox.addActionListener(e -> updateDays());
         yearComboBox.addActionListener(e -> updateDays());
-        
+
         // Initially disable save button until a patient is found
         if (isNewAppointment) {
             saveButton.setEnabled(false);
         }
     }
-    
-     private void findPatient() {
+
+    private void findPatient() {
         String ic = patientIcField.getText();
         selectedPatient = patientControl.findPatientByIc(ic);
 
@@ -169,7 +169,7 @@ public class AppointmentFormUI extends JFrame {
             JOptionPane.showMessageDialog(this, "Please find and select a patient first.", "Input Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         // 1. Get raw data from the form
         String patientId = selectedPatient.getPatientID();
         String doctorId = getSelectedIdFromComboBox(doctorComboBox);
@@ -197,14 +197,16 @@ public class AppointmentFormUI extends JFrame {
             JOptionPane.showMessageDialog(this, result, "Booking Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
     // --- Helper Methods for UI Population ---
     private void populateDatePickers() {
         LocalDate today = LocalDate.now();
-        for (int i = 1; i <= 12; i++) monthComboBox.addItem(i);
+        for (int i = 1; i <= 12; i++) {
+            monthComboBox.addItem(i);
+        }
         yearComboBox.addItem(today.getYear());
         yearComboBox.addItem(today.getYear() + 1);
-        
+
         monthComboBox.setSelectedItem(today.getMonthValue());
         yearComboBox.setSelectedItem(today.getYear());
         updateDays();
@@ -216,20 +218,22 @@ public class AppointmentFormUI extends JFrame {
         int month = (int) monthComboBox.getSelectedItem();
         YearMonth yearMonth = YearMonth.of(year, month);
         int daysInMonth = yearMonth.lengthOfMonth();
-        
+
         Integer selectedDay = (Integer) dayComboBox.getSelectedItem();
         dayComboBox.removeAllItems();
         for (int i = 1; i <= daysInMonth; i++) {
             dayComboBox.addItem(i);
         }
-        
+
         if (selectedDay != null && selectedDay <= daysInMonth) {
             dayComboBox.setSelectedItem(selectedDay);
         }
     }
-    
+
     private void populatePatientComboBox(ListInterface<Patient> pList) {
-        if (pList == null) return;
+        if (pList == null) {
+            return;
+        }
         Iterator<Patient> it = pList.getIterator();
         while (it.hasNext()) {
             Patient p = it.next();
@@ -238,14 +242,16 @@ public class AppointmentFormUI extends JFrame {
     }
 
     private void populateDoctorComboBox(ListInterface<Doctor> dList) {
-        if (dList == null) return;
+        if (dList == null) {
+            return;
+        }
         Iterator<Doctor> it = dList.getIterator();
         while (it.hasNext()) {
             Doctor d = it.next();
             doctorComboBox.addItem(d.getName() + " (" + d.getDoctorID() + ")");
         }
     }
-    
+
     private void populateTimeSlots() {
         for (int hour = 9; hour <= 17; hour++) {
             timeSlotComboBox.addItem(String.format("%02d:00", hour));
@@ -257,7 +263,9 @@ public class AppointmentFormUI extends JFrame {
 
     private String getSelectedIdFromComboBox(JComboBox<String> comboBox) {
         String selected = (String) comboBox.getSelectedItem();
-        if (selected == null) return null;
+        if (selected == null) {
+            return null;
+        }
         return selected.substring(selected.indexOf('(') + 1, selected.indexOf(')'));
     }
 }

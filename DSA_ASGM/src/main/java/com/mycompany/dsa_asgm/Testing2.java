@@ -8,5 +8,5 @@ package com.mycompany.dsa_asgm;
  * @author tiong
  */
 public class Testing2 {
-    //Hi
+    //testing
 }

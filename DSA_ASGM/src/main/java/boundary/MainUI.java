@@ -19,6 +19,9 @@ import entity.Schedule;
 import entity.Consultation;
 import entity.Treatment;
 import entity.Appointment;
+import entity.DispensedItem;
+import entity.DispensingRecord;
+import utility.ReadWriteFile;
 import entity.Queue;
 import utility.ReadWriteFile;
 import java.awt.event.ActionEvent;
@@ -38,14 +41,17 @@ public class MainUI extends JFrame {
     private ListInterface<Appointment> appointmentList;
     private ListInterface<Consultation> consultationList;
     private ListInterface<Treatment> treatmentList;
-  
+    private ListInterface<DispensedItem> dispensedItemList;
+    private ListInterface<DispensingRecord> dispensingRecordList;
+
     private static ReadWriteFile fileManager = new ReadWriteFile();
 
     public MainUI(
             ListInterface<Patient> patientList, ListInterface<Queue> queueList, ListInterface<Doctor> doctorList,
             ListInterface<Medicine> medicineList, ListInterface<Schedule> scheduleList,
             ListInterface<Appointment> appointmentList, ListInterface<Consultation> consultationList,
-            ListInterface<Treatment> treatmentList) {
+            ListInterface<Treatment> treatmentList, ListInterface<DispensedItem> dispensedItemList,
+            ListInterface<DispensingRecord> dispensingRecordList) {
 
         this.patientList = patientList;
         this.queueList = queueList;
@@ -121,7 +127,7 @@ public class MainUI extends JFrame {
         });
 
         btnConsultation.addActionListener(e -> {
-            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList, scheduleList).setVisible(true);
+            new ConsultationUI(this, fileManager, appointmentList, patientList, doctorList, consultationList, queueList, scheduleList, treatmentList).setVisible(true);
             this.setVisible(false);
         });
 
@@ -139,7 +145,8 @@ public class MainUI extends JFrame {
 
 
         btnPharmacy.addActionListener(e -> {
-            System.out.println("Navigating to Pharmacy Management Module...");
+            new PharmacyUI(this, fileManager, dispensingRecordList, medicineList, patientList, doctorList, treatmentList, consultationList).setVisible(true);
+            this.setVisible(false);
         });
 
         // --- Footer Panel (SOUTH) ---
