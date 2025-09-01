@@ -1,222 +1,224 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package control;
 
 import adt.ListInterface;
+import adt.DoublyLinkedList;
+import boundary.DoctorUI;
+import boundary.ScheduleManagementUI;
 import entity.*;
 import utility.ReadWriteFile;
-import boundary.DoctorUI;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 
-public class ScheduleControl extends JFrame {
-    private DoctorUI parent;
+public class ScheduleControl {
     private ListInterface<Schedule> scheduleList;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Appointment> appointmentList;
-    private DefaultTableModel model;
     private ReadWriteFile rwf = new ReadWriteFile();
     private final String SCHEDULE_FILE = "src/main/java/Data File/schedules";
 
+    private ScheduleManagementUI view;
+    private DoctorUI parentUI;
+    
     public ScheduleControl(DoctorUI parent, ListInterface<Schedule> scheduleList, ListInterface<Doctor> doctorList, ListInterface<Appointment> appointmentList) {
-        this.parent = parent;
+        this.parentUI = parent;
         this.scheduleList = scheduleList;
         this.doctorList = doctorList;
         this.appointmentList = appointmentList;
 
-        setTitle("Manage Schedules");
-        setSize(900, 500);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-
-        initComponents();
-
-        // Auto refresh every 30 minutes
-        new Timer(1800000, e -> refreshDoctorAvailability()).start();
-
-        // Load from file if list is empty (prevents duplicates)
-        if (scheduleList.isEmpty()) {
-            rwf.readSchedulesFromFile(SCHEDULE_FILE, scheduleList, doctorList);
+        if (this.scheduleList.isEmpty()) {
+            rwf.readSchedulesFromFile(SCHEDULE_FILE, this.scheduleList, this.doctorList);
         }
 
-        loadSchedules();
-        refreshDoctorAvailability();
+        this.view = new ScheduleManagementUI(this);
+        loadInitialSchedules();
+        view.setVisible(true);
     }
 
-    private void initComponents() {
-        setLayout(new BorderLayout());
-        model = new DefaultTableModel(new String[]{"ID","Doctor","Date","Start","End","Availability"}, 0);
-        JTable table = new JTable(model);
-        add(new JScrollPane(table), BorderLayout.CENTER);
-
-        JPanel btnPanel = new JPanel();
-        JButton btnAdd = new JButton("Add");
-        JButton btnUpd = new JButton("Update");
-        JButton btnDel = new JButton("Delete");
-        JButton btnRefresh = new JButton("Refresh Availability");
-        JButton btnBack = new JButton("Back to Module");
-        JButton btnBackMain = new JButton("Back to Main");
-
-        btnPanel.add(btnAdd);
-        btnPanel.add(btnUpd);
-        btnPanel.add(btnDel);
-        btnPanel.add(btnRefresh);
-        btnPanel.add(btnBack);
-        btnPanel.add(btnBackMain);
-        add(btnPanel, BorderLayout.SOUTH);
-
-        btnAdd.addActionListener(e -> addSchedule());
-        btnUpd.addActionListener(e -> updateSchedule());
-        btnDel.addActionListener(e -> deleteSchedule());
-        btnRefresh.addActionListener(e -> refreshDoctorAvailability());
-        btnBack.addActionListener(e -> {
-            this.dispose();
-            parent.setVisible(true);
-        });
-        btnBackMain.addActionListener(e -> {
-            this.dispose();
-            parent.dispose();
-            parent.getMainUI().setVisible(true);  // ✅ use getter instead of private field
-        });
+    public void loadInitialSchedules() {
+        view.clearSearch();
+        view.displaySchedules(scheduleList);
     }
 
-    private void loadSchedules() {
-        model.setRowCount(0);
+    public void performSearch(String searchText, String searchBy) {
+        searchText = searchText.trim();
+        if (searchText.isEmpty()) {
+            view.showMessage("Please enter a search term.", "Search Error", 0);
+            return;
+        }
+
+        ListInterface<Schedule> filteredList = new DoublyLinkedList<>();
         for (int i = 1; i <= scheduleList.getLength(); i++) {
             Schedule s = scheduleList.getEntry(i);
-            model.addRow(new Object[]{
-                    s.getScheduleID(),
-                    s.getDoctor() != null ? s.getDoctor().getName() : "N/A",
-                    s.getDutyDate(),
-                    s.getStartTime(),
-                    s.getEndTime(),
-                    s.getAvailability()
-            });
+            if (s.getDoctor() == null) continue;
+
+            switch (searchBy) {
+                case "By Doctor":
+                    if (s.getDoctor().getName().toLowerCase().contains(searchText.toLowerCase())) filteredList.add(s);
+                    break;
+                case "By Date (YYYY-MM-DD)":
+                    try {
+                        if (s.getDutyDate().equals(LocalDate.parse(searchText))) filteredList.add(s);
+                    } catch (Exception ex) { view.showMessage("Invalid date format. Use YYYY-MM-DD.", "Error", 0); return; }
+                    break;
+                case "By Availability":
+                    if (s.getAvailability().equalsIgnoreCase(searchText)) filteredList.add(s);
+                    break;
+                case "By Time (HH:mm)":
+                     try {
+                        LocalTime searchTime = LocalTime.parse(searchText);
+                        if (!searchTime.isBefore(s.getStartTime()) && searchTime.isBefore(s.getEndTime())) filteredList.add(s);
+                    } catch (Exception ex) { view.showMessage("Invalid time format. Use HH:mm.", "Error", 0); return; }
+                    break;
+            }
+        }
+        view.displaySchedules(filteredList);
+    }
+    
+    public void addSchedule() {
+        Schedule newSchedule = view.showScheduleInputDialog(null, doctorList);
+        if (newSchedule != null) {
+            scheduleList.add(newSchedule);
+            rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
+            loadInitialSchedules();
+            view.showMessage("Schedule added successfully.", "Success", 1);
+        }
+    }
+    
+    public void updateSchedule() {
+        String scheduleId = view.getSelectedScheduleId();
+        if (scheduleId == null) return;
+        
+        Schedule scheduleToUpdate = findScheduleById(scheduleId);
+        if (scheduleToUpdate == null) return;
+
+        Schedule updatedInfo = view.showScheduleInputDialog(scheduleToUpdate, doctorList);
+        if (updatedInfo != null) {
+            scheduleToUpdate.setDutyDate(updatedInfo.getDutyDate());
+            scheduleToUpdate.setStartTime(updatedInfo.getStartTime());
+            scheduleToUpdate.setEndTime(updatedInfo.getEndTime());
+            rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
+            loadInitialSchedules();
+            view.showMessage("Schedule updated successfully.", "Success", 1);
         }
     }
 
-    private void addSchedule() {
-        JTextField idField = new JTextField();
-        JComboBox<String> docBox = new JComboBox<>();
-        for (int i = 1; i <= doctorList.getLength(); i++) docBox.addItem(doctorList.getEntry(i).getDoctorID());
-        JTextField dateField = new JTextField("2025-08-28");
-        JTextField startField = new JTextField("09:00");
-        JTextField endField = new JTextField("09:30");
-        JTextField availField = new JTextField("Available");
-
-        Object[] fields = {"ID:", idField, "Doctor ID:", docBox, "Date (yyyy-MM-dd):", dateField,
-                "Start (HH:mm):", startField, "End (HH:mm):", endField, "Availability:", availField};
-
-        if (JOptionPane.showConfirmDialog(this, fields, "Add Schedule", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            try {
-                String id = idField.getText().trim();
-                String docId = (String)docBox.getSelectedItem();
-                LocalDate d = LocalDate.parse(dateField.getText().trim());
-                LocalTime s = LocalTime.parse(startField.getText().trim());
-                LocalTime e = LocalTime.parse(endField.getText().trim());
-                String avail = availField.getText().trim();
-
-                if (id.isEmpty() || docId == null) { JOptionPane.showMessageDialog(this, "ID and Doctor required"); return; }
-                Doctor doc = null;
-                for (int i = 1; i <= doctorList.getLength(); i++) {
-                    if (doctorList.getEntry(i).getDoctorID().equals(docId)) { doc = doctorList.getEntry(i); break; }
-                }
-
-                Schedule sc = new Schedule(id, doc, d, s, e, avail);
-                scheduleList.add(sc);
+    public void deleteSchedule() {
+        String scheduleId = view.getSelectedScheduleId();
+        if (scheduleId == null) return;
+        
+        for (int i = 1; i <= scheduleList.getLength(); i++) {
+            if (scheduleList.getEntry(i).getScheduleID().equals(scheduleId)) {
+                scheduleList.remove(i);
                 rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
-                loadSchedules();
-            } catch (DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid date/time format");
+                loadInitialSchedules();
+                view.showMessage("Schedule deleted successfully.", "Success", 1);
+                return;
             }
         }
     }
 
-    private void updateSchedule() {
-        int row = getSelectedRow();
-        if (row == -1) { JOptionPane.showMessageDialog(this, "Select schedule"); return; }
-        String id = (String) model.getValueAt(row, 0);
-        Schedule sc = null;
+    public void refreshDoctorAvailability() {
+        LocalDateTime now = LocalDateTime.now();
+        boolean changed = false;
         for (int i = 1; i <= scheduleList.getLength(); i++) {
-            if (scheduleList.getEntry(i).getScheduleID().equals(id)) { sc = scheduleList.getEntry(i); break; }
-        }
-        if (sc == null) return;
+            Schedule s = scheduleList.getEntry(i);
+            String oldStatus = s.getAvailability();
+            String newStatus = oldStatus; 
 
-        JTextField dateField = new JTextField(sc.getDutyDate().toString());
-        JTextField startField = new JTextField(sc.getStartTime().toString());
-        JTextField endField = new JTextField(sc.getEndTime().toString());
-        JTextField availField = new JTextField(sc.getAvailability());
-        Object[] fields = {"Date (yyyy-MM-dd):", dateField, "Start (HH:mm):", startField, "End (HH:mm):", endField, "Availability:", availField};
+            LocalDateTime scheduleStart = LocalDateTime.of(s.getDutyDate(), s.getStartTime());
+            LocalDateTime scheduleEnd = LocalDateTime.of(s.getDutyDate(), s.getEndTime());
 
-        if (JOptionPane.showConfirmDialog(this, fields, "Update Schedule", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            try {
-                sc.setDutyDate(LocalDate.parse(dateField.getText().trim()));
-                sc.setStartTime(LocalTime.parse(startField.getText().trim()));
-                sc.setEndTime(LocalTime.parse(endField.getText().trim()));
-                sc.setAvailability(availField.getText().trim());
-                rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
-                loadSchedules();
-            } catch (DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid date/time format");
-            }
-        }
-    }
-
-    private void deleteSchedule() {
-        int row = getSelectedRow();
-        if (row == -1) { JOptionPane.showMessageDialog(this, "Select schedule"); return; }
-        String id = (String) model.getValueAt(row, 0);
-        for (int i = 1; i <= scheduleList.getLength(); i++) {
-            if (scheduleList.getEntry(i).getScheduleID().equals(id)) { scheduleList.remove(i); break; }
-        }
-        rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
-        loadSchedules();
-    }
-
-    private int getSelectedRow() {
-        Component[] comps = getContentPane().getComponents();
-        for (Component c : comps) {
-            if (c instanceof JScrollPane) {
-                JScrollPane sp = (JScrollPane) c;
-                JViewport v = sp.getViewport();
-                Component inside = v.getView();
-                if (inside instanceof JTable) {
-                    JTable t = (JTable) inside;
-                    return t.getSelectedRow();
+            if (now.isAfter(scheduleEnd) || now.isBefore(scheduleStart)) {
+                newStatus = "Off Duty";
+            } else {
+                newStatus = "Available";
+                for (int j = 1; j <= appointmentList.getLength(); j++) {
+                    Appointment a = appointmentList.getEntry(j);
+                    if (a.getDoctor().getDoctorID().equals(s.getDoctor().getDoctorID()) && a.getAppointmentDate().equals(s.getDutyDate())) {
+                        LocalDateTime apptStart = LocalDateTime.of(a.getAppointmentDate(), a.getAppointmentTime());
+                        LocalDateTime apptEnd = apptStart.plusMinutes(30);
+                        if (!now.isBefore(apptStart) && now.isBefore(apptEnd)) {
+                            newStatus = "Busy";
+                            break;
+                        }
+                    }
                 }
             }
+            if (!oldStatus.equals(newStatus)) {
+                s.setAvailability(newStatus);
+                changed = true;
+            }
         }
-        return -1;
+        if (changed) {
+            rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
+            view.displaySchedules(scheduleList);
+        }
     }
+    
+    public void generateWorkloadReport() {
+        String[] reportTypes = {"Weekly Workload", "Monthly Workload"};
+        String selectedType = (String) javax.swing.JOptionPane.showInputDialog(null, "Select the report type:", "Generate Workload Report", 3, null, reportTypes, reportTypes[0]);
+        if (selectedType == null) return;
 
-    // Availability refresh using appointments (30-minute slots)
-    private void refreshDoctorAvailability() {
         LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
+        LocalDate startDate, endDate;
+        String reportTitle;
 
-        for (int i = 1; i <= scheduleList.getLength(); i++) {
-            Schedule s = scheduleList.getEntry(i);
-            String status = "Available";
-            for (int j = 1; j <= appointmentList.getLength(); j++) {
-                Appointment a = appointmentList.getEntry(j);
-                if (a.getDoctor().getDoctorID().equals(s.getDoctor().getDoctorID()) && a.getAppointmentDate().equals(today)) {
-                    LocalTime start = a.getAppointmentTime();
-                    LocalTime end = start.plusMinutes(30);
-                    if (!now.isBefore(start) && !now.isAfter(end)) { status = "Busy"; break; }
-                }
-            }
-            s.setAvailability(status);
+        if (selectedType.equals("Weekly Workload")) {
+            startDate = today.with(java.time.DayOfWeek.MONDAY);
+            endDate = today.with(java.time.DayOfWeek.SUNDAY);
+            reportTitle = "Weekly Workload Report (" + startDate + " to " + endDate + ")";
+        } else {
+            startDate = today.withDayOfMonth(1);
+            endDate = today.withDayOfMonth(today.lengthOfMonth());
+            reportTitle = "Monthly Workload Report for " + today.getMonth().toString() + " " + today.getYear();
         }
 
-        rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
-        loadSchedules();
+        java.util.Map<Doctor, Long> workloadMap = new java.util.HashMap<>();
+        for (int i = 1; i <= scheduleList.getLength(); i++) {
+            Schedule s = scheduleList.getEntry(i);
+            LocalDate dutyDate = s.getDutyDate();
+            if (!dutyDate.isBefore(startDate) && !dutyDate.isAfter(endDate) && s.getDoctor() != null) {
+                long duration = java.time.Duration.between(s.getStartTime(), s.getEndTime()).toMinutes();
+                workloadMap.put(s.getDoctor(), workloadMap.getOrDefault(s.getDoctor(), 0L) + duration);
+            }
+        }
+
+        StringBuilder reportContent = new StringBuilder();
+        reportContent.append(reportTitle).append("\n----------------------------------------\n");
+        reportContent.append(String.format("%-20s | %s\n", "Doctor Name", "Total Scheduled Hours"));
+        reportContent.append("----------------------------------------\n");
+        
+        if (workloadMap.isEmpty()) {
+            reportContent.append("No schedules found for this period.");
+        } else {
+            for (java.util.Map.Entry<Doctor, Long> entry : workloadMap.entrySet()) {
+                double hours = entry.getValue() / 60.0;
+                reportContent.append(String.format("%-20s | %.2f hours\n", entry.getKey().getName(), hours));
+            }
+        }
+        view.showReport(reportContent.toString(), "Workload Report");
+    }
+    
+    public void close() {
+        view.dispose();
+        parentUI.setVisible(true);
+    }
+
+    public void closeToMain() {
+        view.dispose();
+        parentUI.dispose();
+        parentUI.getMainUI().setVisible(true);
+    }
+
+    private Schedule findScheduleById(String id) {
+        for (int i = 1; i <= scheduleList.getLength(); i++) {
+            if (scheduleList.getEntry(i).getScheduleID().equals(id)) {
+                return scheduleList.getEntry(i);
+            }
+        }
+        return null;
     }
 }
-

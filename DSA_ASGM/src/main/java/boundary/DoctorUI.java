@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package boundary;
 
 import adt.ListInterface;
@@ -15,7 +11,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public class DoctorUI extends JFrame {
-    private MainUI mainUI;  // reference to main menu
+    private MainUI mainUI;
     private ListInterface<Doctor> doctorList;
     private ListInterface<Schedule> scheduleList;
     private ListInterface<Appointment> appointmentList;
@@ -29,30 +25,40 @@ public class DoctorUI extends JFrame {
         this.scheduleList = scheduleList;
         this.appointmentList = appointmentList;
 
-        setTitle("Doctor Management Module");
-        setSize(420, 260);
+        // Use a consistent window title
+        setTitle("Consultation & Appointment Dashboard");
+        setSize(420, 300); // Slightly taller to accommodate new style
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        // Set the main background color
+        getContentPane().setBackground(UIStyle.MAIN_BACKGROUND);
 
         initComponents();
     }
 
-    public MainUI getMainUI() {   // ✅ getter for MainUI
+    public MainUI getMainUI() {
         return mainUI;
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(10, 10));
 
-        JLabel title = new JLabel("Doctor Management", JLabel.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 20));
-        add(title, BorderLayout.NORTH);
+        // ======== HEADER PANEL (NORTH) ========
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(UIStyle.HEADER_BACKGROUND);
+        JLabel lblTitle = UIStyle.createHeaderLabel("Doctor Management Module");
+        headerPanel.add(lblTitle, BorderLayout.CENTER);
+        add(headerPanel, BorderLayout.NORTH);
 
+        // ======== BUTTONS PANEL (CENTER) ========
         JPanel panel = new JPanel(new GridLayout(3, 1, 10, 10));
+        panel.setBackground(UIStyle.MAIN_BACKGROUND);
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
-        JButton btnManageDoctors = new JButton("Manage Doctors");
-        JButton btnManageSchedules = new JButton("Manage Schedules");
-        JButton btnBackMain = new JButton("Back to Main");
+        // Create styled buttons using the UIStyle helper class
+        JButton btnManageDoctors = UIStyle.createStyledButton("Manage Doctors", UIStyle.SECONDARY_ACTION_COLOR);
+        JButton btnManageSchedules = UIStyle.createStyledButton("Manage Schedules", UIStyle.SECONDARY_ACTION_COLOR);
+        JButton btnBackMain = UIStyle.createStyledButton("Back to Main", new Color(120, 120, 120));
 
         panel.add(btnManageDoctors);
         panel.add(btnManageSchedules);
@@ -62,18 +68,17 @@ public class DoctorUI extends JFrame {
 
         btnManageDoctors.addActionListener(e -> {
             this.setVisible(false);
-            new DoctorControl(this, doctorList).setVisible(true);
+            new DoctorControl(this, doctorList, appointmentList); 
         });
 
         btnManageSchedules.addActionListener(e -> {
             this.setVisible(false);
-            new ScheduleControl(this, scheduleList, doctorList, appointmentList).setVisible(true);
+            new ScheduleControl(this, scheduleList, doctorList, appointmentList); 
         });
 
         btnBackMain.addActionListener(e -> {
             this.dispose();
-            mainUI.setVisible(true);   // back to MainUI
+            mainUI.setVisible(true);
         });
     }
 }
-
