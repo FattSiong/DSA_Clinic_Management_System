@@ -78,7 +78,8 @@ public class Treatment implements Comparable<Treatment> {
 
     public void setPrescribedMedicine(ListInterface<Medicine> prescribedMedicine) {
         this.prescribedMedicine = prescribedMedicine;
-
+    }
+        
     @Override
     public int compareTo(Treatment other) {
         return this.treatmentID.compareTo(other.getTreatmentID());

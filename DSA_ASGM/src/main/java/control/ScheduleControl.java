@@ -41,6 +41,82 @@ public class ScheduleControl {
         view.displaySchedules(scheduleList);
     }
 
+    // UPDATED: This method now includes validation
+    public void addSchedule() {
+        Schedule newSchedule = view.showScheduleInputDialog(null, doctorList);
+        
+        if (newSchedule != null) {
+            // === VALIDATION LOGIC ===
+            if (!isScheduleIdUnique(newSchedule.getScheduleID())) {
+                view.showMessage("Schedule ID '" + newSchedule.getScheduleID() + "' already exists.", "Validation Error", 0);
+                return;
+            }
+            if (newSchedule.getDutyDate().isBefore(LocalDate.now())) {
+                view.showMessage("Cannot add a schedule for a past date.", "Validation Error", 0);
+                return;
+            }
+            if (!newSchedule.getEndTime().isAfter(newSchedule.getStartTime())) {
+                view.showMessage("End time must be after the start time.", "Validation Error", 0);
+                return;
+            }
+            if (hasSchedulingConflict(newSchedule)) {
+                view.showMessage("This schedule overlaps with an existing schedule for " + newSchedule.getDoctor().getName() + ".", "Scheduling Conflict", 0);
+                return;
+            }
+
+            // If all validations pass
+            scheduleList.add(newSchedule);
+            rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
+            loadInitialSchedules();
+            view.showMessage("Schedule added successfully.", "Success", 1);
+        }
+    }
+    
+    public void updateSchedule() {
+        String scheduleId = view.getSelectedScheduleId();
+        if (scheduleId == null) return;
+        
+        Schedule scheduleToUpdate = findScheduleById(scheduleId);
+        if (scheduleToUpdate == null) return;
+
+        Schedule updatedInfo = view.showScheduleInputDialog(scheduleToUpdate, doctorList);
+        if (updatedInfo != null) {
+            // Add validation for update as well
+            if (updatedInfo.getDutyDate().isBefore(LocalDate.now())) {
+                view.showMessage("Cannot update a schedule to a past date.", "Validation Error", 0);
+                return;
+            }
+            if (!updatedInfo.getEndTime().isAfter(updatedInfo.getStartTime())) {
+                view.showMessage("End time must be after the start time.", "Validation Error", 0);
+                return;
+            }
+            
+            scheduleToUpdate.setDutyDate(updatedInfo.getDutyDate());
+            scheduleToUpdate.setStartTime(updatedInfo.getStartTime());
+            scheduleToUpdate.setEndTime(updatedInfo.getEndTime());
+            rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
+            loadInitialSchedules();
+            view.showMessage("Schedule updated successfully.", "Success", 1);
+        }
+    }
+
+    public void deleteSchedule() {
+        String scheduleId = view.getSelectedScheduleId();
+        if (scheduleId == null) return;
+        
+        for (int i = 1; i <= scheduleList.getLength(); i++) {
+            if (scheduleList.getEntry(i).getScheduleID().equals(scheduleId)) {
+                scheduleList.remove(i);
+                rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
+                loadInitialSchedules();
+                view.showMessage("Schedule deleted successfully.", "Success", 1);
+                return;
+            }
+        }
+    }
+    
+    // ... (All other methods like performSearch, refreshDoctorAvailability, etc., remain the same) ...
+
     public void performSearch(String searchText, String searchBy) {
         searchText = searchText.trim();
         if (searchText.isEmpty()) {
@@ -76,49 +152,6 @@ public class ScheduleControl {
         view.displaySchedules(filteredList);
     }
     
-    public void addSchedule() {
-        Schedule newSchedule = view.showScheduleInputDialog(null, doctorList);
-        if (newSchedule != null) {
-            scheduleList.add(newSchedule);
-            rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
-            loadInitialSchedules();
-            view.showMessage("Schedule added successfully.", "Success", 1);
-        }
-    }
-    
-    public void updateSchedule() {
-        String scheduleId = view.getSelectedScheduleId();
-        if (scheduleId == null) return;
-        
-        Schedule scheduleToUpdate = findScheduleById(scheduleId);
-        if (scheduleToUpdate == null) return;
-
-        Schedule updatedInfo = view.showScheduleInputDialog(scheduleToUpdate, doctorList);
-        if (updatedInfo != null) {
-            scheduleToUpdate.setDutyDate(updatedInfo.getDutyDate());
-            scheduleToUpdate.setStartTime(updatedInfo.getStartTime());
-            scheduleToUpdate.setEndTime(updatedInfo.getEndTime());
-            rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
-            loadInitialSchedules();
-            view.showMessage("Schedule updated successfully.", "Success", 1);
-        }
-    }
-
-    public void deleteSchedule() {
-        String scheduleId = view.getSelectedScheduleId();
-        if (scheduleId == null) return;
-        
-        for (int i = 1; i <= scheduleList.getLength(); i++) {
-            if (scheduleList.getEntry(i).getScheduleID().equals(scheduleId)) {
-                scheduleList.remove(i);
-                rwf.writeSchedulesToFile(SCHEDULE_FILE, scheduleList);
-                loadInitialSchedules();
-                view.showMessage("Schedule deleted successfully.", "Success", 1);
-                return;
-            }
-        }
-    }
-
     public void refreshDoctorAvailability() {
         LocalDateTime now = LocalDateTime.now();
         boolean changed = false;
@@ -220,5 +253,38 @@ public class ScheduleControl {
             }
         }
         return null;
+    }
+
+    // --- NEW VALIDATION HELPER METHODS ---
+
+    private boolean isScheduleIdUnique(String id) {
+        for (int i = 1; i <= scheduleList.getLength(); i++) {
+            if (scheduleList.getEntry(i).getScheduleID().equalsIgnoreCase(id)) {
+                return false; // Found a duplicate ID
+            }
+        }
+        return true; // ID is unique
+    }
+
+    private boolean hasSchedulingConflict(Schedule newSchedule) {
+        for (int i = 1; i <= scheduleList.getLength(); i++) {
+            Schedule existingSchedule = scheduleList.getEntry(i);
+
+            // Check if it's the same doctor on the same day
+            if (existingSchedule.getDoctor().getDoctorID().equals(newSchedule.getDoctor().getDoctorID()) &&
+                existingSchedule.getDutyDate().equals(newSchedule.getDutyDate())) {
+                
+                // An overlap occurs if (newStart < existingEnd) AND (newEnd > existingStart)
+                LocalTime newStart = newSchedule.getStartTime();
+                LocalTime newEnd = newSchedule.getEndTime();
+                LocalTime existingStart = existingSchedule.getStartTime();
+                LocalTime existingEnd = existingSchedule.getEndTime();
+
+                if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
+                    return true; // Conflict found
+                }
+            }
+        }
+        return false; // No conflicts
     }
 }
