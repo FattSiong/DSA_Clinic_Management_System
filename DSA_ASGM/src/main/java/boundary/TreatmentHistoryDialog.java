@@ -20,7 +20,7 @@ public class TreatmentHistoryDialog extends JDialog {
     private final TreatmentController treatmentController;
     private final Frame owner;
 
-    // UI Components
+    
     private JTable treatmentTable;
     private DefaultTableModel treatmentTableModel;
     private JComboBox<String> cmbSearchBy;
@@ -47,7 +47,7 @@ public class TreatmentHistoryDialog extends JDialog {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // --- Search Panel (NORTH) ---
+        
         JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
         
         JPanel searchControls = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -68,11 +68,11 @@ public class TreatmentHistoryDialog extends JDialog {
         searchPanel.add(searchButtons, BorderLayout.EAST);
         mainPanel.add(searchPanel, BorderLayout.NORTH);
 
-        // --- Center Panel with Split Pane ---
+        
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPane.setResizeWeight(0.8);
 
-        // --- Table Panel (Top of Split Pane) ---
+        
         String[] columnNames = {"ID", "Patient", "Doctor", "Date", "Details", "Medicines"};
         treatmentTableModel = new DefaultTableModel(columnNames, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
@@ -83,7 +83,7 @@ public class TreatmentHistoryDialog extends JDialog {
         tableScrollPane.setBorder(BorderFactory.createTitledBorder("Treatment Records"));
         splitPane.setTopComponent(tableScrollPane);
         
-        // --- Report Control Panel (Bottom of Split Pane) ---
+        
         JPanel reportControlPanel = new JPanel(new BorderLayout(10, 5));
         reportControlPanel.setBorder(BorderFactory.createTitledBorder("Reports"));
         
@@ -111,7 +111,7 @@ public class TreatmentHistoryDialog extends JDialog {
 
         mainPanel.add(splitPane, BorderLayout.CENTER);
 
-        // --- Action Button Panel (SOUTH) ---
+        
         JPanel actionPanel = new JPanel(new BorderLayout());
         JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton btnEdit = new JButton("Edit Selected");
@@ -125,7 +125,7 @@ public class TreatmentHistoryDialog extends JDialog {
         
         add(mainPanel);
 
-        // --- Add Listeners ---
+        
         btnSearch.addActionListener(e -> searchTreatments());
         btnClear.addActionListener(e -> {
             tfSearchTerm.setText("");
@@ -142,7 +142,7 @@ public class TreatmentHistoryDialog extends JDialog {
             datePanel.setVisible(isDiagnosisReport);
         });
 
-        // ADDED: Mouse listener for double-click action
+        
         treatmentTable.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent mouseEvent) {
                 if (mouseEvent.getClickCount() == 2 && treatmentTable.getSelectedRow() != -1) {
@@ -154,7 +154,7 @@ public class TreatmentHistoryDialog extends JDialog {
 
     private void showTreatmentDetails() {
         int selectedRow = treatmentTable.getSelectedRow();
-        if (selectedRow == -1) return; // Should not happen, but safe to check
+        if (selectedRow == -1) return;
 
         String treatmentId = (String) treatmentTableModel.getValueAt(selectedRow, 0);
         Treatment treatment = treatmentController.findTreatmentById(treatmentId);

@@ -1,4 +1,3 @@
-// Name: <Your Name>
 package boundary;
 
 import adt.ListInterface;
@@ -10,23 +9,22 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.Iterator;
-import java.util.Objects;
 
 public class TreatmentUI extends JFrame {
 
     private final TreatmentController treatmentController;
     private final Frame owner;
 
-    // UI Components
+    
     private JTable consultationTable;
     private DefaultTableModel consultationTableModel;
     private JTextField tfSearch;
-    private JComboBox<String> cmbSearchBy; // Added for search criteria
+    private JComboBox<String> cmbSearchBy;
     private JButton btnSearch, btnClear, btnCreate, btnHistory, btnBack;
     private JLabel lblPageInfo;
     private JButton btnPrev, btnNext;
 
-    // Pagination state
+    
     private int currentPage = 1;
     private final int rowsPerPage = 10;
     private ListInterface<Consultation> currentConsultationList;
@@ -38,12 +36,12 @@ public class TreatmentUI extends JFrame {
         
         setSize(800, 600);
         setLocationRelativeTo(owner);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Don't exit the whole app
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                owner.setVisible(true); // Show the main menu again when this closes
+                owner.setVisible(true);
             }
         });
 
@@ -53,11 +51,11 @@ public class TreatmentUI extends JFrame {
     }
 
     private void initComponents() {
-        // --- Main Panel with Padding ---
+        
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // --- Search Panel (NORTH) ---
+        
         JPanel topPanel = new JPanel(new BorderLayout(10, 0));
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Search By:"));
@@ -76,7 +74,7 @@ public class TreatmentUI extends JFrame {
         
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
-        // --- Consultation Table (CENTER) ---
+        
         String[] columnNames = {"Consultation ID", "Patient Name", "Patient IC", "Doctor Name", "Date"};
         consultationTableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -86,10 +84,10 @@ public class TreatmentUI extends JFrame {
         consultationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         mainPanel.add(new JScrollPane(consultationTable), BorderLayout.CENTER);
 
-        // --- Navigation Panel (SOUTH) ---
+        
         JPanel navPanel = new JPanel(new BorderLayout());
         
-        // FIX: Create a separate panel for the left-side buttons
+        
         JPanel leftActionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         btnCreate = new JButton("Create Treatment Record");
         btnHistory = new JButton("View Treatment History");
@@ -117,7 +115,7 @@ public class TreatmentUI extends JFrame {
         btnSearch.addActionListener(e -> updateConsultationListAndTable());
         btnClear.addActionListener(e -> {
             tfSearch.setText("");
-            cmbSearchBy.setSelectedIndex(0); // Reset dropdown
+            cmbSearchBy.setSelectedIndex(0);
             updateConsultationListAndTable();
         });
         btnCreate.addActionListener(e -> createTreatmentRecord());
@@ -149,7 +147,7 @@ public class TreatmentUI extends JFrame {
     }
 
     private void updateConsultationListAndTable() {
-        currentPage = 1; // Reset to first page on new search
+        currentPage = 1;
         String searchTerm = tfSearch.getText();
         String searchBy = (String) cmbSearchBy.getSelectedItem();
         currentConsultationList = treatmentController.getPendingConsultations(LocalDate.now(), searchTerm, searchBy);
@@ -157,7 +155,7 @@ public class TreatmentUI extends JFrame {
     }
     
     private void updateTableDisplay() {
-        consultationTableModel.setRowCount(0); // Clear table
+        consultationTableModel.setRowCount(0);
         
         int totalRecords = currentConsultationList.getLength();
         if (totalRecords == 0) {

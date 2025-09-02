@@ -1,4 +1,3 @@
-// Name: <Your Name>
 package boundary;
 
 import adt.DoublyLinkedList;
@@ -17,7 +16,7 @@ public class EditTreatmentDialog extends JDialog {
     private final TreatmentController treatmentController;
     private final Treatment treatmentToEdit;
 
-    // UI Components
+    
     private JTable availableMedsTable;
     private JList<String> prescribedMedsList;
     private DefaultTableModel availableMedsModel;
@@ -26,7 +25,7 @@ public class EditTreatmentDialog extends JDialog {
     private JComboBox<String> cmbSearchBy;
     private JTextField tfMedSearch;
     
-    // Data holders
+    
     private final ListInterface<Medicine> currentPrescribedMedicines;
 
     public EditTreatmentDialog(Frame owner, TreatmentController controller, Treatment treatment) {
@@ -35,7 +34,7 @@ public class EditTreatmentDialog extends JDialog {
         this.treatmentToEdit = treatment;
         this.currentPrescribedMedicines = new DoublyLinkedList<>();
         
-        // Deep copy the initial list of medicines
+        
         Iterator<Medicine> initialMeds = treatment.getPrescribedMedicine().getIterator();
         while(initialMeds.hasNext()){
             currentPrescribedMedicines.add(initialMeds.next());
@@ -46,7 +45,6 @@ public class EditTreatmentDialog extends JDialog {
         setLayout(new BorderLayout(10, 10));
 
         initComponents();
-        addListeners();
         populateInitialData();
     }
 
@@ -131,7 +129,7 @@ public class EditTreatmentDialog extends JDialog {
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
         add(mainPanel);
 
-        // Link listeners
+        
         btnMedSearch.addActionListener(e -> populateAvailableMedicines());
         btnMedClear.addActionListener(e -> {
             tfMedSearch.setText("");
@@ -144,14 +142,11 @@ public class EditTreatmentDialog extends JDialog {
         btnCancel.addActionListener(e -> dispose());
     }
 
-    private void addListeners() {
-        // All listeners are now set within initComponents to simplify the code structure
-    }
 
     private void populateInitialData() {
-        // Populate available medicines
+        
         populateAvailableMedicines();
-        // Populate prescribed medicines and notes
+        
         taTreatmentNotes.setText(treatmentToEdit.getTreatmentDetails());
         Iterator<Medicine> it = currentPrescribedMedicines.getIterator();
         while (it.hasNext()) {

@@ -1,4 +1,3 @@
-// Name: <Your Name>
 package control;
 
 import adt.DoublyLinkedList;
@@ -18,7 +17,7 @@ public class TreatmentController {
     private final ListInterface<Medicine> medicineList;
     private final ReadWriteFile fileManager;
 
-    // Helper inner class for aggregating report data
+    
     private static class ReportItem implements Comparable<ReportItem> {
         String name;
         int count;
@@ -30,7 +29,7 @@ public class TreatmentController {
 
         @Override
         public int compareTo(ReportItem other) {
-            // Compare by count for sorting purposes
+            
             return Integer.compare(this.count, other.count);
         }
     }
@@ -66,7 +65,7 @@ public class TreatmentController {
             }
         }
 
-        reportData.sortDescending(); // Use ADT to sort by count
+        reportData.sortDescending();
 
         StringBuilder report = new StringBuilder();
         report.append("==============================================\n");
@@ -130,7 +129,7 @@ public class TreatmentController {
             }
         }
         
-        reportData.sortDescending(); // Use ADT to sort by count
+        reportData.sortDescending();
 
         StringBuilder report = new StringBuilder();
         report.append(String.format("=============================================================\n"));
@@ -271,7 +270,24 @@ public class TreatmentController {
     }
 
     public Treatment addTreatment(Consultation consultation, String details, ListInterface<Medicine> prescribedMedicines) {
-        String newId = "T" + String.format("%03d", treatmentList.getLength() + 1);
+        
+        int highestIdNum = 1000;
+        if (!treatmentList.isEmpty()) {
+            Iterator<Treatment> it = treatmentList.getIterator();
+            while(it.hasNext()){
+                Treatment t = it.next();
+                try {
+                    int currentIdNum = Integer.parseInt(t.getTreatmentID().substring(1));
+                    if (currentIdNum > highestIdNum) {
+                        highestIdNum = currentIdNum;
+                    }
+                } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+                }
+            }
+        }
+        
+        String newId = "T" + (highestIdNum + 1);
+
         Treatment newTreatment = new Treatment(newId, consultation, details, prescribedMedicines);
         if (treatmentList.add(newTreatment)) {
             fileManager.writeTreatmentsToFile("src/main/java/Data File/treatments", treatmentList);
@@ -303,7 +319,7 @@ public class TreatmentController {
                         break;
                 }
             }
-           
+            
             if(match){
                 found.add(t);
             }

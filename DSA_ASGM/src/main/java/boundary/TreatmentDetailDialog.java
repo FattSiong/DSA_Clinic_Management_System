@@ -1,4 +1,3 @@
-// Name: <Your Name>
 package boundary;
 
 import entity.Consultation;
@@ -21,8 +20,7 @@ public class TreatmentDetailDialog extends JDialog {
     }
 
     private void initComponents(Treatment treatment) {
-        // --- Header ---
-        // Creating a simple header without UIFactory
+        
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         headerPanel.setBackground(new Color(0, 102, 204));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -32,12 +30,12 @@ public class TreatmentDetailDialog extends JDialog {
         headerPanel.add(titleLabel);
         add(headerPanel, BorderLayout.NORTH);
 
-        // --- Main Panel for all content ---
+        
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // --- Consultation Details Panel ---
+        
         Consultation consultation = treatment.getConsultation();
         JPanel consultationPanel = createSectionPanel("Consultation Info");
         consultationPanel.add(createDetailRow("Consultation ID:", consultation.getConsultationID()));
@@ -48,22 +46,22 @@ public class TreatmentDetailDialog extends JDialog {
         consultationPanel.add(createDetailRow("Diagnosis:", consultation.getDiagnosis()));
         mainPanel.add(consultationPanel);
         
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Spacer
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // --- Treatment Details Panel ---
+        
         JPanel treatmentPanel = createSectionPanel("Treatment Info");
         JTextArea notesArea = new JTextArea(treatment.getTreatmentDetails());
         notesArea.setEditable(false);
         notesArea.setLineWrap(true);
         notesArea.setWrapStyleWord(true);
-        notesArea.setBackground(this.getBackground()); // Match dialog background
+        notesArea.setBackground(this.getBackground());
         notesArea.setFont(new Font("Arial", Font.PLAIN, 12));
         treatmentPanel.add(createDetailRow("Treatment Notes:", new JScrollPane(notesArea)));
         mainPanel.add(treatmentPanel);
         
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Spacer
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // --- Prescribed Medicines Panel ---
+        
         JPanel medicinePanel = createSectionPanel("Prescribed Medicines");
         DefaultListModel<String> medicineListModel = new DefaultListModel<>();
         Iterator<Medicine> medIt = treatment.getPrescribedMedicine().getIterator();
@@ -76,7 +74,7 @@ public class TreatmentDetailDialog extends JDialog {
 
         add(mainPanel, BorderLayout.CENTER);
 
-        // --- Footer / Close Button ---
+        
         JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         footerPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
         JButton btnClose = new JButton("Close");
@@ -85,7 +83,7 @@ public class TreatmentDetailDialog extends JDialog {
         add(footerPanel, BorderLayout.SOUTH);
     }
     
-    // Helper to create consistent section panels
+    
     private JPanel createSectionPanel(String title) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -94,26 +92,26 @@ public class TreatmentDetailDialog extends JDialog {
         return panel;
     }
     
-    // Helper to create consistent label-value rows for simple text
+    
     private JPanel createDetailRow(String labelText, String valueText) {
         JPanel rowPanel = new JPanel(new BorderLayout(5, 0));
         rowPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JLabel label = new JLabel(labelText);
         label.setFont(new Font("Arial", Font.BOLD, 12));
-        label.setPreferredSize(new Dimension(120, 20)); // Fixed width for alignment
+        label.setPreferredSize(new Dimension(120, 20));
         rowPanel.add(label, BorderLayout.WEST);
         rowPanel.add(new JLabel(valueText), BorderLayout.CENTER);
         return rowPanel;
     }
 
-    // Overloaded helper for complex components like JScrollPane
+    
     private JPanel createDetailRow(String labelText, Component component) {
         JPanel rowPanel = new JPanel(new BorderLayout(5, 0));
         rowPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JLabel label = new JLabel(labelText);
         label.setFont(new Font("Arial", Font.BOLD, 12));
         label.setPreferredSize(new Dimension(120, 20));
-        rowPanel.add(label, BorderLayout.NORTH); // Align label to the top
+        rowPanel.add(label, BorderLayout.NORTH);
         rowPanel.add(component, BorderLayout.CENTER);
         return rowPanel;
     }
