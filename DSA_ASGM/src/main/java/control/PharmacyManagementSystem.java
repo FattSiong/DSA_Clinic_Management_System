@@ -26,32 +26,41 @@ public class PharmacyManagementSystem {
     private static final String TREATMENTS_FILE = "src/main/java/Data File/treatments";
     private static final String DISPENSING_RECORD_FILE = "src/main/java/Data File/dispensingRecord";
 
-    // Access the central data lists from the main application class
     private ListInterface<DispensingRecord> dispensingRecords = ClinicManagementSystem.getDispensingRecordList();
     private ListInterface<Medicine> medicineList = ClinicManagementSystem.getMedicineList();
     private ListInterface<Treatment> treatmentList = ClinicManagementSystem.getTreatmentList();
     private ReadWriteFile fileManager;
 
+    //Read and write file
     public PharmacyManagementSystem(ReadWriteFile fileManager) {
         this.fileManager = fileManager;
     }
 
+    //Saving method
     public void saveData() {
         fileManager.writeMedicinesToFile(MEDICINES_FILE, medicineList);
         fileManager.writeTreatmentsToFile(TREATMENTS_FILE, treatmentList);
         fileManager.writeDispensingRecordToFile(DISPENSING_RECORD_FILE, dispensingRecords);
     }
 
-    // ========== Report Generation Logic ==========
+    //Reports
     public String generateSalesReport() {
         if (dispensingRecords.isEmpty()) {
             return "No dispensing records available to generate a report.";
         }
+
+        //Grand total for the medicine
+        double grandTotal = 0.0;
+
         ListInterface<DispensingRecord> sortedRecords = new adt.DoublyLinkedList<>();
         Iterator<DispensingRecord> copyIterator = dispensingRecords.getIterator();
         while (copyIterator.hasNext()) {
-            sortedRecords.add(copyIterator.next());
+            DispensingRecord record = copyIterator.next();
+            sortedRecords.add(record);
+
+            grandTotal += record.getTotalAmount();
         }
+
         Comparator<DispensingRecord> byAmount = Comparator.comparingDouble(DispensingRecord::getTotalAmount);
         sortedRecords.sortDescending(byAmount);
 
@@ -71,6 +80,9 @@ public class PharmacyManagementSystem {
                     record.getTotalAmount()));
         }
         reportContent.append("----------------------------------------------------------\n");
+
+        reportContent.append(String.format("\nGrand Total of All Sales: $%.2f\n", grandTotal));
+
         return reportContent.toString();
     }
 
@@ -102,12 +114,12 @@ public class PharmacyManagementSystem {
         return reportContent.toString();
     }
 
-    // ========== Medicine CRUD Logic ==========
+    //Medicine CRUD
     public void addMedicine(String name, String description, int stock, double price, int reorderLvl) throws Exception {
         String newId = generateNewMedicineId();
         Medicine newMedicine = new Medicine(newId, name, description, stock, price, reorderLvl);
         medicineList.add(newMedicine);
-        
+
         saveData();
     }
 
@@ -142,7 +154,7 @@ public class PharmacyManagementSystem {
         }
     }
 
-    // ========== Dispensing & Revert Logic ==========
+    //Dispensing and revert
     public void dispenseFromTreatment(Treatment treatment, ListInterface<Integer> quantities) throws Exception {
         String newRecordId = generateNewRecordId();
         Consultation consultation = treatment.getConsultation();
@@ -174,7 +186,7 @@ public class PharmacyManagementSystem {
 
         saveData();
     }
-    
+
     public void revertDispensingRecord(String recordId) throws Exception {
         DispensingRecord recordToRevert = findRecordById(recordId);
         if (recordToRevert == null) {
@@ -203,11 +215,55 @@ public class PharmacyManagementSystem {
         if (position != -1) {
             dispensingRecords.remove(position);
         }
-        
+
         saveData();
     }
 
-    // ========== Helper / Utility Methods ==========
+    //Utility Methods
+    public Treatment findTreatmentById(String id) {
+        Iterator<Treatment> iterator = treatmentList.getIterator();
+        while (iterator.hasNext()) {
+            Treatment t = iterator.next();
+            if (t.getTreatmentID().equals(id)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    public DispensingRecord findRecordById(String id) {
+        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
+        while (iterator.hasNext()) {
+            DispensingRecord rec = iterator.next();
+            if (rec.getRecordId().equals(id)) {
+                return rec;
+            }
+        }
+        return null;
+    }
+
+    public Medicine findMedicineById(String id) {
+        Iterator<Medicine> iterator = medicineList.getIterator();
+        while (iterator.hasNext()) {
+            Medicine med = iterator.next();
+            if (med.getMedicineID().equals(id)) {
+                return med;
+            }
+        }
+        return null;
+    }
+
+    private String generateNewMedicineId() {
+        medicineList.sort();
+
+        if (medicineList.isEmpty()) {
+            return "M1001";
+        }
+        Medicine last = medicineList.getEntry(medicineList.getLength());
+        int lastIdNum = Integer.parseInt(last.getMedicineID().substring(1));
+        return "M" + (lastIdNum + 1);
+    }
+
     private String generateNewRecordId() {
         int maxIdNum = 1000;
         Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
@@ -227,50 +283,6 @@ public class PharmacyManagementSystem {
         return "MDR" + (maxIdNum + 1);
     }
 
-    public Medicine findMedicineById(String id) {
-        Iterator<Medicine> iterator = medicineList.getIterator();
-        while (iterator.hasNext()) {
-            Medicine med = iterator.next();
-            if (med.getMedicineID().equals(id)) {
-                return med;
-            }
-        }
-        return null;
-    }
-
-    public DispensingRecord findRecordById(String id) {
-        Iterator<DispensingRecord> iterator = dispensingRecords.getIterator();
-        while (iterator.hasNext()) {
-            DispensingRecord rec = iterator.next();
-            if (rec.getRecordId().equals(id)) {
-                return rec;
-            }
-        }
-        return null;
-    }
-
-    public Treatment findTreatmentById(String id) {
-        Iterator<Treatment> iterator = treatmentList.getIterator();
-        while (iterator.hasNext()) {
-            Treatment t = iterator.next();
-            if (t.getTreatmentID().equals(id)) {
-                return t;
-            }
-        }
-        return null;
-    }
-    
-    private String generateNewMedicineId() {
-        medicineList.sort();
-
-        if (medicineList.isEmpty()) {
-            return "M1001";
-        }
-        Medicine last = medicineList.getEntry(medicineList.getLength());
-        int lastIdNum = Integer.parseInt(last.getMedicineID().substring(1));
-        return "M" + (lastIdNum + 1);
-    }
-    
     public String foundTreatmentId(Consultation consultation) {
         Iterator<Treatment> iterator = treatmentList.getIterator();
         while (iterator.hasNext()) {
